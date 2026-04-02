@@ -24,13 +24,8 @@ public class UsuarioService {
     if (repository.existsByEmail(u.getEmail())) {
       throw new EmailJaCadastradoException();
     }
-    Usuario novoUsuario = new Usuario();
-    novoUsuario.setEmail(u.getEmail());
-    novoUsuario.setNome(u.getNome());
-    novoUsuario.setSenha(u.getSenha());
-    repository.save(novoUsuario);
-
-    return novoUsuario;
+    repository.save(u);
+    return u;
   }
 
   public List<Usuario> listarTodos() {
