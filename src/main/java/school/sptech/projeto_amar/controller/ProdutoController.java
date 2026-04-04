@@ -1,6 +1,7 @@
 package school.sptech.projeto_amar.controller;
 
 import jakarta.validation.Valid;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.domain.Produto;
@@ -37,5 +38,11 @@ public class ProdutoController {
                                                         @PathVariable Integer id) {
         Produto atualizado = service.atualizar(id, ProdutoMapping.toDomain(produto));
         return ResponseEntity.ok(ProdutoMapping.toResponse(atualizado));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> removerPorId(@PathVariable Integer id) {
+        service.removerPorId(id);
+        return ResponseEntity.noContent().build();
     }
 }

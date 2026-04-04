@@ -11,7 +11,6 @@ import school.sptech.projeto_amar.repository.CategoriaRepository;
 import school.sptech.projeto_amar.repository.ProdutoRepository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ProdutoService {
@@ -59,5 +58,12 @@ public class ProdutoService {
         produtoExistente.setCategoria(categoria);
 
         return repository.save(produtoExistente);
+    }
+
+    public void removerPorId(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new ProdutoNaoEncontradoException();
+        }
+        repository.deleteById(id);
     }
 }
