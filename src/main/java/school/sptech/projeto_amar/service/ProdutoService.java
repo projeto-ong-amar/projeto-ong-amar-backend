@@ -5,11 +5,13 @@ import school.sptech.projeto_amar.domain.Categoria;
 import school.sptech.projeto_amar.domain.Produto;
 import school.sptech.projeto_amar.exception.CategoriaNaoEncontradaException;
 import school.sptech.projeto_amar.exception.ExisteProdutoByNomeException;
+import school.sptech.projeto_amar.exception.ProdutoNaoEncontradoException;
 import school.sptech.projeto_amar.exception.SemProdutosCadastradosException;
 import school.sptech.projeto_amar.repository.CategoriaRepository;
 import school.sptech.projeto_amar.repository.ProdutoRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ProdutoService {
@@ -40,5 +42,22 @@ public class ProdutoService {
         }
 
         return retorno;
+    }
+
+    public Produto atualizar(Integer id, Produto p) {
+        if (!repository.existsById(id)) {
+            throw new ProdutoNaoEncontradoException();
+        }
+
+        Produto produtoExistente = repository.findById(id).orElseThrow(ProdutoNaoEncontradoException::new);
+        Categoria categoria = categoriaRepository.findById(p.getCategoria().getId())
+                .orElseThrow(() -> new CategoriaNaoEncontradaException(p.getCategoria().getId()));
+
+        produtoExistente.setNome(p.getNome());
+        produtoExistente.setCategoria(p.getCategoria());
+        produtoExistente.setUnidadeMedida(p.getUnidadeMedida());
+        produtoExistente.setCategoria(categoria);
+
+        return repository.save(produtoExistente);
     }
 }

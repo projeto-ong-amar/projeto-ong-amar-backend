@@ -31,4 +31,11 @@ public class ProdutoController {
         List<ProdutoResponseDTO> retorno = service.listar().stream().map(ProdutoMapping::toResponse).toList();
         return ResponseEntity.ok(retorno);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ProdutoResponseDTO> atualizar(@Valid @RequestBody ProdutoRequestDTO produto,
+                                                        @PathVariable Integer id) {
+        Produto atualizado = service.atualizar(id, ProdutoMapping.toDomain(produto));
+        return ResponseEntity.ok(ProdutoMapping.toResponse(atualizado));
+    }
 }
