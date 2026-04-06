@@ -40,5 +40,11 @@ public class UsuarioController {
     return ResponseEntity.ok(UsuarioMapping.toResponse(atualizado));
   }
 
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> removerPorId(@PathVariable Integer id) {
+    service.remover(id);
+    return ResponseEntity.noContent().build();
+  }
+
 
 }

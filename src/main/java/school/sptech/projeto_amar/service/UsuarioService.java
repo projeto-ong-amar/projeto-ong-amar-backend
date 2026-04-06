@@ -51,4 +51,12 @@ public class UsuarioService {
     return repository.save(usuarioExistente);
   }
 
+  public void remover(Integer id) {
+    if (!repository.existsById(id)) {
+      throw new UsuarioNaoEncontradoException();
+    }
+
+    repository.deleteById(id);
+  }
+
 }
