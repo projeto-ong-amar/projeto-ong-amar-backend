@@ -33,5 +33,18 @@ public class UsuarioController {
     return ResponseEntity.ok(usuarios);
   }
 
+  @PutMapping("/{id}")
+  public ResponseEntity<UsuarioResponseDTO> atualizar(@Valid @RequestBody UsuarioRequestDTO u,
+                                                      @PathVariable Integer id) {
+    Usuario atualizado = service.atualizar(id, UsuarioMapping.toDomain(u));
+    return ResponseEntity.ok(UsuarioMapping.toResponse(atualizado));
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> removerPorId(@PathVariable Integer id) {
+    service.remover(id);
+    return ResponseEntity.noContent().build();
+  }
+
 
 }

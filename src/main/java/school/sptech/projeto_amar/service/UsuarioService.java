@@ -6,6 +6,7 @@ import school.sptech.projeto_amar.domain.Usuario;
 import school.sptech.projeto_amar.dto.response.UsuarioResponseDTO;
 import school.sptech.projeto_amar.exception.EmailJaCadastradoException;
 import school.sptech.projeto_amar.exception.SemUsuariosCadastradosException;
+import school.sptech.projeto_amar.exception.UsuarioNaoEncontradoException;
 import school.sptech.projeto_amar.mapper.UsuarioMapping;
 import school.sptech.projeto_amar.repository.UsuarioRepository;
 
@@ -36,5 +37,26 @@ public class UsuarioService {
 
     return usuarios;
   }
-  
+
+  public Usuario atualizar(Integer id, Usuario u) {
+    if (!repository.existsById(id)) {
+      throw new UsuarioNaoEncontradoException();
+    }
+
+    Usuario usuarioExistente = repository.findById(id).orElseThrow(UsuarioNaoEncontradoException::new);
+    usuarioExistente.setNome(u.getNome());
+    usuarioExistente.setEmail(u.getEmail());
+    usuarioExistente.setSenha(u.getSenha());
+
+    return repository.save(usuarioExistente);
+  }
+
+  public void remover(Integer id) {
+    if (!repository.existsById(id)) {
+      throw new UsuarioNaoEncontradoException();
+    }
+
+    repository.deleteById(id);
+  }
+
 }
