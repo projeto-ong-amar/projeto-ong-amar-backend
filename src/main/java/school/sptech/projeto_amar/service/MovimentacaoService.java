@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service;
 import school.sptech.projeto_amar.domain.*;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.request.EntradaRequestDTO;
+import school.sptech.projeto_amar.dto.request.SaidaRequestDTO;
+import school.sptech.projeto_amar.exception.movimentacaoExceptions.EstoqueInsuficienteException;
 import school.sptech.projeto_amar.exception.movimentacaoExceptions.SemMovimentacoesException;
 import school.sptech.projeto_amar.exception.produtoExceptions.ProdutoNaoEncontradoException;
 import school.sptech.projeto_amar.exception.usuarioExceptions.UsuarioNaoEncontradoException;
@@ -68,6 +70,56 @@ public class MovimentacaoService {
         movimentacaoEstoqueRepository.save(movEstoque);
 
         return mov;
+    }
 
+    public Movimentacao saida(SaidaRequestDTO saida){
+        Produto produto =
+                produtoRepository.findById(saida.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
+
+        Usuario usuario =
+                usuarioRepository.findById(saida.fkUsuario()).orElseThrow(UsuarioNaoEncontradoException::new);
+
+        Integer estoqueTotal = calcularEstoqueTotal(produto.getId());
+
+        if (estoqueTotal < saida.quantidade()) {
+            throw new EstoqueInsuficienteException(estoqueTotal);
+        }
+
+        Movimentacao mov = new Movimentacao();
+        mov.setData(LocalDate.now());
+        mov.setMotivo(saida.motivo());
+        mov.setTipo(TipoMovimentacao.SAIDA);
+        mov.setProduto(produto);
+        mov.setQuantidade(saida.quantidade());
+        mov.setUsuario(usuario);
+        repository.save(mov);
+
+        List<ProdutoLote> lotes = produtoLoteRepository
+                .findByProdutoIdAndQuantidadeGreaterThanOrderByValidadeAsc(produto.getId(), 0);
+
+        int quantidadeRestante = saida.quantidade();
+
+        for (ProdutoLote lote : lotes) {
+            if (quantidadeRestante <= 0) break;
+
+            Integer retirar = Math.min(lote.getQuantidade(), quantidadeRestante);
+
+            lote.setQuantidade(lote.getQuantidade() - retirar);
+            produtoLoteRepository.save(lote);
+
+            MovimentacaoEstoque movEstoque = new MovimentacaoEstoque();
+            movEstoque.setMovimentacao(mov);
+            movEstoque.setProdutoLote(lote);
+            movEstoque.setQuantidade(retirar);
+            movimentacaoEstoqueRepository.save(movEstoque);
+
+            quantidadeRestante -= retirar;
+        }
+
+        return mov;
+    }
+
+    public Integer calcularEstoqueTotal(Integer produtoId) {
+        return produtoLoteRepository.sumQuantidadeByProdutoId(produtoId);
     }
 }
