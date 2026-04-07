@@ -49,5 +49,5 @@ CREATE TABLE IF NOT EXISTS movimentacao_estoque (
 	fk_movimentacao INT NOT NULL,
 	fk_produto_lote INT NOT NULL,
 	CONSTRAINT fk_movimentacao_estoque_movimentacao FOREIGN KEY (fk_movimentacao) REFERENCES movimentacao(id),
-	CONSTRAINT fk_movimentacao_estoque_produto_lote FOREIGN KEY (fk_produto_lote) REFERENCES produto_lote(id),
+	CONSTRAINT fk_movimentacao_estoque_produto_lote FOREIGN KEY (fk_produto_lote) REFERENCES produto_lote(id)
 );
