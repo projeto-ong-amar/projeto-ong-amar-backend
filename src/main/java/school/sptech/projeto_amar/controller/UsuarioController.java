@@ -2,6 +2,7 @@ package school.sptech.projeto_amar.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import school.sptech.projeto_amar.service.UsuarioService;
 
 import java.util.List;
 
+@Tag(name = "Usuário", description = "Operações relacionadas a usuários")
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {

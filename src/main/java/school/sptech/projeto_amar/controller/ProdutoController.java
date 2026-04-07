@@ -2,6 +2,7 @@ package school.sptech.projeto_amar.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import school.sptech.projeto_amar.service.ProdutoService;
 
 import java.util.List;
 
+@Tag(name = "Produto", description = "Operações relacionadas a produtos")
 @RestController
 @RequestMapping("/produtos")
 public class ProdutoController {
