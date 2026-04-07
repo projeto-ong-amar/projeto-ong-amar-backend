@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.dto.request.EntradaRequestDTO;
+import school.sptech.projeto_amar.dto.request.PerdaRequestDTO;
 import school.sptech.projeto_amar.dto.request.SaidaRequestDTO;
 import school.sptech.projeto_amar.dto.response.MovimentacaoResponseDTO;
 import school.sptech.projeto_amar.mapper.MovimentacaoMapping;
@@ -38,6 +39,12 @@ public class MovimentacaoController {
     @PostMapping("/saida")
     public ResponseEntity<MovimentacaoResponseDTO> saida(@Valid @RequestBody SaidaRequestDTO saida) {
         Movimentacao movimentacao = service.saida(saida);
+        return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
+    }
+
+    @PostMapping("/perda")
+    public ResponseEntity<MovimentacaoResponseDTO> perda(@Valid @RequestBody PerdaRequestDTO perda) {
+        Movimentacao movimentacao = service.perda(perda);
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
     }
 }

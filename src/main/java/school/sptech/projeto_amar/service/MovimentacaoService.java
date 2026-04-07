@@ -4,10 +4,12 @@ import org.springframework.stereotype.Service;
 import school.sptech.projeto_amar.domain.*;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.request.EntradaRequestDTO;
+import school.sptech.projeto_amar.dto.request.PerdaRequestDTO;
 import school.sptech.projeto_amar.dto.request.SaidaRequestDTO;
 import school.sptech.projeto_amar.exception.movimentacaoExceptions.EstoqueInsuficienteException;
 import school.sptech.projeto_amar.exception.movimentacaoExceptions.SemMovimentacoesException;
 import school.sptech.projeto_amar.exception.produtoExceptions.ProdutoNaoEncontradoException;
+import school.sptech.projeto_amar.exception.produtoLoteExceptions.LoteNaoEncontradoException;
 import school.sptech.projeto_amar.exception.usuarioExceptions.UsuarioNaoEncontradoException;
 import school.sptech.projeto_amar.repository.*;
 
@@ -115,6 +117,42 @@ public class MovimentacaoService {
 
             quantidadeRestante -= retirar;
         }
+
+        return mov;
+    }
+
+    public Movimentacao perda(PerdaRequestDTO perda) {
+        Produto produto = produtoRepository.findById(perda.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
+        Usuario usuario = usuarioRepository.findById(perda.fkUsuario()).orElseThrow(UsuarioNaoEncontradoException::new);
+        
+        Integer estoqueTotal = calcularEstoqueTotal(perda.fkProduto());
+        
+        if (estoqueTotal < perda.quantidade()) {
+            throw new EstoqueInsuficienteException(estoqueTotal);
+        }
+        
+        ProdutoLote lote = produtoLoteRepository.findById(perda.fkLote()).orElseThrow(LoteNaoEncontradoException::new);
+
+        if (lote.getQuantidade() < perda.quantidade()) {
+            throw new EstoqueInsuficienteException(lote.getQuantidade());
+        }
+        lote.setQuantidade(lote.getQuantidade() - perda.quantidade());
+        produtoLoteRepository.save(lote);
+
+        Movimentacao mov = new Movimentacao();
+        mov.setData(LocalDate.now());
+        mov.setMotivo(perda.motivo());
+        mov.setTipo(TipoMovimentacao.PERDA);
+        mov.setProduto(produto);
+        mov.setQuantidade(perda.quantidade());
+        mov.setUsuario(usuario);
+        repository.save(mov);
+
+        MovimentacaoEstoque movEstoque = new MovimentacaoEstoque();
+        movEstoque.setMovimentacao(mov);
+        movEstoque.setQuantidade(perda.quantidade());
+        movEstoque.setProdutoLote(lote);
+        movimentacaoEstoqueRepository.save(movEstoque);
 
         return mov;
     }
