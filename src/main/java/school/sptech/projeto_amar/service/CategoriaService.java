@@ -2,8 +2,8 @@ package school.sptech.projeto_amar.service;
 
 import org.springframework.stereotype.Service;
 import school.sptech.projeto_amar.domain.Categoria;
-import school.sptech.projeto_amar.exception.CategoriaJaExisteException;
-import school.sptech.projeto_amar.exception.SemCategoriasCadastradasException;
+import school.sptech.projeto_amar.exception.categoriaExceptions.CategoriaJaExisteException;
+import school.sptech.projeto_amar.exception.categoriaExceptions.SemCategoriasCadastradasException;
 import school.sptech.projeto_amar.repository.CategoriaRepository;
 
 import java.util.List;

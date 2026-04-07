@@ -3,10 +3,10 @@ package school.sptech.projeto_amar.service;
 import org.springframework.stereotype.Service;
 import school.sptech.projeto_amar.domain.Categoria;
 import school.sptech.projeto_amar.domain.Produto;
-import school.sptech.projeto_amar.exception.CategoriaNaoEncontradaException;
-import school.sptech.projeto_amar.exception.ExisteProdutoByNomeException;
-import school.sptech.projeto_amar.exception.ProdutoNaoEncontradoException;
-import school.sptech.projeto_amar.exception.SemProdutosCadastradosException;
+import school.sptech.projeto_amar.exception.categoriaExceptions.CategoriaNaoEncontradaException;
+import school.sptech.projeto_amar.exception.produtoExceptions.ExisteProdutoByNomeException;
+import school.sptech.projeto_amar.exception.produtoExceptions.ProdutoNaoEncontradoException;
+import school.sptech.projeto_amar.exception.produtoExceptions.SemProdutosCadastradosException;
 import school.sptech.projeto_amar.repository.CategoriaRepository;
 import school.sptech.projeto_amar.repository.ProdutoRepository;
 

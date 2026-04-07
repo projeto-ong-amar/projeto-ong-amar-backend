@@ -1,4 +1,4 @@
-package school.sptech.projeto_amar.exception;
+package school.sptech.projeto_amar.exception.usuarioExceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

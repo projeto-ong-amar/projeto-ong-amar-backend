@@ -2,7 +2,7 @@ package school.sptech.projeto_amar.service;
 
 import org.springframework.stereotype.Service;
 import school.sptech.projeto_amar.domain.Movimentacao;
-import school.sptech.projeto_amar.exception.SemMovimentacoesException;
+import school.sptech.projeto_amar.exception.movimentacaoExceptions.SemMovimentacoesException;
 import school.sptech.projeto_amar.repository.MovimentacaoRepository;
 
 import java.util.List;
