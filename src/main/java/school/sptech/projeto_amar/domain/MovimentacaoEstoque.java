@@ -14,9 +14,39 @@ public class MovimentacaoEstoque {
     @JoinColumn(name = "fk_movimentacao")
     private Movimentacao movimentacao;
 
+    @ManyToOne
+    @JoinColumn(name="fk_produto_lote")
+    private ProdutoLote produtoLote;
 
-    // precisa ser criado
-//    @ManyToOne
-//    @JoinColumn(name="fk_produto_lote")
-//    private ProdutoLote produtoLote;
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public Integer getQuantidade() {
+        return quantidade;
+    }
+
+    public void setQuantidade(Integer quantidade) {
+        this.quantidade = quantidade;
+    }
+
+    public Movimentacao getMovimentacao() {
+        return movimentacao;
+    }
+
+    public void setMovimentacao(Movimentacao movimentacao) {
+        this.movimentacao = movimentacao;
+    }
+
+    public ProdutoLote getProdutoLote() {
+        return produtoLote;
+    }
+
+    public void setProdutoLote(ProdutoLote produtoLote) {
+        this.produtoLote = produtoLote;
+    }
 }

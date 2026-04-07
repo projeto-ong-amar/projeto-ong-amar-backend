@@ -2,12 +2,12 @@ package school.sptech.projeto_amar.dto.response;
 
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 public record MovimentacaoResponseDTO(
         TipoMovimentacao tipo,
         Integer quantidade,
-        LocalDateTime data,
+        LocalDate data,
         String motivo,
         ProdutoResponseMovimentacaoDTO produto,
         UsuarioResponseMovimentacaoDTO usuario
