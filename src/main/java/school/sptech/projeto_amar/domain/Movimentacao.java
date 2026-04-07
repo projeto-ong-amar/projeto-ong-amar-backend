@@ -3,7 +3,7 @@ package school.sptech.projeto_amar.domain;
 import jakarta.persistence.*;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
@@ -16,14 +16,14 @@ public class Movimentacao {
     private TipoMovimentacao tipo;
 
     private Integer quantidade;
-    private LocalDateTime data;
+    private LocalDate data;
     private String motivo;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name="fk_produto")
     private Produto produto;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name="fk_usuario")
     private Usuario usuario;
 
@@ -54,11 +54,11 @@ public class Movimentacao {
         this.quantidade = quantidade;
     }
 
-    public LocalDateTime getData() {
+    public LocalDate getData() {
         return data;
     }
 
-    public void setData(LocalDateTime data) {
+    public void setData(LocalDate data) {
         this.data = data;
     }
 
