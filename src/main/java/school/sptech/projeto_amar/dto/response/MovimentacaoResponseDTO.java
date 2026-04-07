@@ -1,0 +1,38 @@
+package school.sptech.projeto_amar.dto.response;
+
+import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
+
+import java.time.LocalDateTime;
+
+public record MovimentacaoResponseDTO(
+        TipoMovimentacao tipo,
+        Integer quantidade,
+        LocalDateTime data,
+        String motivo,
+        ProdutoResponseMovimentacaoDTO produto,
+        UsuarioResponseMovimentacaoDTO usuario
+) {
+    public static class ProdutoResponseMovimentacaoDTO {
+        private String nome;
+
+        public String getNome() {
+            return nome;
+        }
+
+        public void setNome(String nome) {
+            this.nome = nome;
+        }
+    }
+
+    public static class UsuarioResponseMovimentacaoDTO {
+        private String nome;
+
+        public String getNome() {
+            return nome;
+        }
+
+        public void setNome(String nome) {
+            this.nome = nome;
+        }
+    }
+}
