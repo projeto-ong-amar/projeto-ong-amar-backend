@@ -1,5 +1,7 @@
 package school.sptech.projeto_amar.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,12 +26,17 @@ public class CategoriaController {
     }
 
     @PostMapping
+    @Operation(summary = "Cadastrar uma nova categoria")
+    @ApiResponse(responseCode = "201", description = "Categoria cadastrada com sucesso")
     public ResponseEntity<CategoriaResponseDTO> cadastrar(@RequestBody CategoriaRequestDTO c) {
         Categoria cadastrar = service.cadastrar(CategoriaMapping.toDomain(c));
         return ResponseEntity.status(201).body(CategoriaMapping.toResponse(cadastrar));
     }
 
-    @GetMapping ResponseEntity<List<CategoriaResponseDTO>> listar() {
+    @GetMapping
+    @Operation(summary = "Listar todas as categorias")
+    @ApiResponse(responseCode = "200", description = "Lista de categorias retornada com sucesso")
+    ResponseEntity<List<CategoriaResponseDTO>> listar() {
         List<CategoriaResponseDTO> retorno = service.listar().stream().map(CategoriaMapping::toResponse).toList();
         return ResponseEntity.ok(retorno);
     }
