@@ -1,9 +1,7 @@
 package school.sptech.projeto_amar.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 
 @Entity
 public class Usuario {
@@ -13,6 +11,26 @@ public class Usuario {
   private String nome;
   private String email;
   private String senha;
+
+  @Enumerated(EnumType.STRING)
+  private TipoUsuario tipoUsuario;
+  private String status;
+
+  public TipoUsuario getTipoUsuario() {
+    return tipoUsuario;
+  }
+
+  public void setTipoUsuario(TipoUsuario tipoUsuario) {
+    this.tipoUsuario = tipoUsuario;
+  }
+
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
 
   public Integer getId() {
     return id;
