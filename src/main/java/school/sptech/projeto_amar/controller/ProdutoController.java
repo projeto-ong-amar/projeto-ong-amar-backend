@@ -1,7 +1,6 @@
 package school.sptech.projeto_amar.controller;
 
 import jakarta.validation.Valid;
-import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.domain.Produto;

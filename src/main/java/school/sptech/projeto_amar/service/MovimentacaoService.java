@@ -42,6 +42,36 @@ public class MovimentacaoService {
         return retorno;
     }
 
+    public List<Movimentacao> listarPorTipoEProdutoId(TipoMovimentacao tipo, Integer produtoId) {
+        List<Movimentacao> retorno = repository.findByTipoAndProdutoId(tipo, produtoId);
+
+        if (retorno.isEmpty()) {
+            throw new SemMovimentacoesException();
+        }
+
+        return retorno;
+    }
+
+    public List<Movimentacao> listarPorProdutoId(Integer produtoId) {
+        List<Movimentacao> retorno = repository.findByProdutoId(produtoId);
+
+        if (retorno.isEmpty()) {
+            throw new SemMovimentacoesException();
+        }
+
+        return retorno;
+    }
+
+    public List<Movimentacao> listarPorTipo(TipoMovimentacao tipo) {
+        List<Movimentacao> retorno = repository.findByTipo(tipo);
+
+        if (retorno.isEmpty()) {
+            throw new SemMovimentacoesException();
+        }
+
+        return retorno;
+    }
+
     public Movimentacao entrada(EntradaRequestDTO entrada) {
         Produto produto =
                 produtoRepository.findById(entrada.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
