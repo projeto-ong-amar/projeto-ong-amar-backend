@@ -20,6 +20,10 @@ public class AutenticacaoService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(
                 "Usuário com o email " + email + " não encontrado"));
+
+        if (usuario.getStatus().equals("INATIVO")) {
+            throw new UsernameNotFoundException("Usuário inativo!");
+        }
         return new UsuarioDetalhesDTO(usuario);
     }
 }

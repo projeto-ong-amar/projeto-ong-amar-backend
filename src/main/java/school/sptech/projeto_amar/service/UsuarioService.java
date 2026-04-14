@@ -44,6 +44,7 @@ public class UsuarioService {
 
     String senhaHashed = passwordEncoder.encode(u.getSenha());
     u.setSenha(senhaHashed);
+    u.setStatus("ATIVO");
 
     return repository.save(u);
   }
@@ -61,7 +62,7 @@ public class UsuarioService {
   }
 
   public List<Usuario> listarTodos() {
-    List<Usuario> usuarios = repository.findAll();
+    List<Usuario> usuarios = repository.findAllByStatus("ATIVO");
     if (usuarios.isEmpty()) {
       throw new SemUsuariosCadastradosException();
     }
@@ -75,7 +76,7 @@ public class UsuarioService {
     }
 
     TipoUsuario tipo = TipoUsuario.valueOf(tipoUsuario);
-    List<Usuario> usuarios = repository.findAllByTipoUsuario(tipo);
+    List<Usuario> usuarios = repository.findAllByTipoUsuarioAndStatus(tipo, "ATIVO");
 
     if (usuarios.isEmpty()) {
       throw new UsuarioNaoEncontradoException();
@@ -98,11 +99,9 @@ public class UsuarioService {
   }
 
   public void remover(Integer id) {
-    if (!repository.existsById(id)) {
-      throw new UsuarioNaoEncontradoException();
-    }
-
-    repository.deleteById(id);
+    Usuario usuario = repository.findById(id).orElseThrow(UsuarioNaoEncontradoException::new);
+    usuario.setStatus("INATIVO");
+    repository.save(usuario);
   }
 
 }
