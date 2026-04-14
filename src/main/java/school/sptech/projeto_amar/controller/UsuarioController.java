@@ -1,30 +1,72 @@
 package school.sptech.projeto_amar.controller;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import school.sptech.projeto_amar.domain.Usuario;
-import school.sptech.projeto_amar.dto.usuario.UsuarioRequestDTO;
-import school.sptech.projeto_amar.dto.usuario.UsuarioResponseDTO;
+import school.sptech.projeto_amar.dto.usuario.*;
 import school.sptech.projeto_amar.mapper.UsuarioMapping;
 import school.sptech.projeto_amar.service.UsuarioService;
 
+import java.time.Duration;
 import java.util.List;
 
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {
   private UsuarioService service;
+  @Value("${jwt.validity}")
+  private Long jwtValidity;
+  public static final String COOKIE_NOME = "authToken";
 
   public UsuarioController(UsuarioService service) {
     this.service = service;
   }
 
-  @PostMapping
+  @PostMapping("/cadastrar")
   public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO u) {
     Usuario cadastrado = service.cadastrar(UsuarioMapping.toDomain(u));
     return ResponseEntity.status(201).body(UsuarioMapping.toResponse(cadastrado));
+  }
+
+  @PostMapping("/login")
+  public ResponseEntity<UsuarioSessaoDTO> login (@Valid @RequestBody UsuarioLoginDTO loginDTO,
+                                                 HttpServletResponse response) {
+    UsuarioTokenDTO tokenDTO = service.login(loginDTO.email(), loginDTO.senha());
+
+    ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, tokenDTO.token())
+            .httpOnly(true)
+            .secure(false) // -> true em produção
+            .sameSite("Strict")
+            .path("/")
+            .maxAge(Duration.ofSeconds(jwtValidity))
+            .build();
+
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+    UsuarioSessaoDTO sessao = UsuarioMapping.toSessao(tokenDTO);
+    return ResponseEntity.ok(sessao);
+  }
+
+  @PostMapping("/logout")
+  public ResponseEntity<Void> logout(HttpServletResponse response) {
+    ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, "")
+            .httpOnly(true)
+            .secure(false)
+            .sameSite("Strict")
+            .path("/")
+            .maxAge(0)
+            .build();
+
+    response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+    return ResponseEntity.noContent().build();
   }
 
   @GetMapping
