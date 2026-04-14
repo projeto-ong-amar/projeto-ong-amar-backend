@@ -2,10 +2,11 @@ package school.sptech.projeto_amar.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.domain.Produto;
-import school.sptech.projeto_amar.dto.request.ProdutoRequestDTO;
-import school.sptech.projeto_amar.dto.response.ProdutoResponseDTO;
+import school.sptech.projeto_amar.dto.produto.ProdutoRequestDTO;
+import school.sptech.projeto_amar.dto.produto.ProdutoResponseDTO;
 import school.sptech.projeto_amar.mapper.ProdutoMapping;
 import school.sptech.projeto_amar.service.ProdutoService;
 
@@ -21,6 +22,7 @@ public class ProdutoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ProdutoResponseDTO> cadastrar(@Valid @RequestBody ProdutoRequestDTO produto) {
         Produto cadastro = service.cadastrar(ProdutoMapping.toDomain(produto));
         return ResponseEntity.status(201).body(ProdutoMapping.toResponse(cadastro));
@@ -33,6 +35,7 @@ public class ProdutoController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ProdutoResponseDTO> atualizar(@Valid @RequestBody ProdutoRequestDTO produto,
                                                         @PathVariable Integer id) {
         Produto atualizado = service.atualizar(id, ProdutoMapping.toDomain(produto));
@@ -40,6 +43,7 @@ public class ProdutoController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('VOLUNTARIO')")
     public ResponseEntity<Void> removerPorId(@PathVariable Integer id) {
         service.removerPorId(id);
         return ResponseEntity.noContent().build();

@@ -1,4 +1,4 @@
-package school.sptech.projeto_amar.dto.request;
+package school.sptech.projeto_amar.dto.categoria;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

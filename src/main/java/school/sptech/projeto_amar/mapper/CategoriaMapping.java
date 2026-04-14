@@ -1,8 +1,8 @@
 package school.sptech.projeto_amar.mapper;
 
 import school.sptech.projeto_amar.domain.Categoria;
-import school.sptech.projeto_amar.dto.request.CategoriaRequestDTO;
-import school.sptech.projeto_amar.dto.response.CategoriaResponseDTO;
+import school.sptech.projeto_amar.dto.categoria.CategoriaRequestDTO;
+import school.sptech.projeto_amar.dto.categoria.CategoriaResponseDTO;
 
 public class CategoriaMapping {
     public static Categoria toDomain(CategoriaRequestDTO c) {

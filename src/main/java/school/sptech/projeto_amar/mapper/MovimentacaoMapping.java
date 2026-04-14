@@ -1,7 +1,7 @@
 package school.sptech.projeto_amar.mapper;
 
 import school.sptech.projeto_amar.domain.Movimentacao;
-import school.sptech.projeto_amar.dto.response.MovimentacaoResponseDTO;
+import school.sptech.projeto_amar.dto.movimentacao.MovimentacaoResponseDTO;
 
 public class MovimentacaoMapping {
     public static MovimentacaoResponseDTO toResponse(Movimentacao m) {
