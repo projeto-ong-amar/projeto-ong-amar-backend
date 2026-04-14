@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import school.sptech.projeto_amar.domain.Usuario;
@@ -70,12 +71,14 @@ public class UsuarioController {
   }
 
   @GetMapping
+  @PreAuthorize("hasRole('ADMINISTRADOR')")
   public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
     List<UsuarioResponseDTO> usuarios = service.listarTodos().stream().map(UsuarioMapping::toResponse).toList();
     return ResponseEntity.ok(usuarios);
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize("hasRole('ADMINISTRADOR')")
   public ResponseEntity<UsuarioResponseDTO> atualizar(@Valid @RequestBody UsuarioRequestDTO u,
                                                       @PathVariable Integer id) {
     Usuario atualizado = service.atualizar(id, UsuarioMapping.toDomain(u));
@@ -83,6 +86,7 @@ public class UsuarioController {
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('ADMINISTRADOR')")
   public ResponseEntity<Void> removerPorId(@PathVariable Integer id) {
     service.remover(id);
     return ResponseEntity.noContent().build();
