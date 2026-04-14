@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import school.sptech.projeto_amar.domain.Categoria;
-import school.sptech.projeto_amar.dto.request.CategoriaRequestDTO;
-import school.sptech.projeto_amar.dto.response.CategoriaResponseDTO;
+import school.sptech.projeto_amar.dto.categoria.CategoriaRequestDTO;
+import school.sptech.projeto_amar.dto.categoria.CategoriaResponseDTO;
 import school.sptech.projeto_amar.mapper.CategoriaMapping;
 import school.sptech.projeto_amar.service.CategoriaService;
 

@@ -1,4 +1,4 @@
-package school.sptech.projeto_amar.dto.response;
+package school.sptech.projeto_amar.dto.movimentacao;
 
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 

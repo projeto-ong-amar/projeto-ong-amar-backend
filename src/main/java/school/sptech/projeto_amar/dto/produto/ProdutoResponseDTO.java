@@ -1,4 +1,4 @@
-package school.sptech.projeto_amar.dto.response;
+package school.sptech.projeto_amar.dto.produto;
 
 public record ProdutoResponseDTO(
         String nome,

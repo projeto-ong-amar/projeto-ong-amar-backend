@@ -4,8 +4,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.domain.Produto;
-import school.sptech.projeto_amar.dto.request.ProdutoRequestDTO;
-import school.sptech.projeto_amar.dto.response.ProdutoResponseDTO;
+import school.sptech.projeto_amar.dto.produto.ProdutoRequestDTO;
+import school.sptech.projeto_amar.dto.produto.ProdutoResponseDTO;
 import school.sptech.projeto_amar.mapper.ProdutoMapping;
 import school.sptech.projeto_amar.service.ProdutoService;
 

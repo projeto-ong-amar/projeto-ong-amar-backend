@@ -5,10 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
-import school.sptech.projeto_amar.dto.request.EntradaRequestDTO;
-import school.sptech.projeto_amar.dto.request.PerdaRequestDTO;
-import school.sptech.projeto_amar.dto.request.SaidaRequestDTO;
-import school.sptech.projeto_amar.dto.response.MovimentacaoResponseDTO;
+import school.sptech.projeto_amar.dto.movimentacao.entrada.EntradaRequestDTO;
+import school.sptech.projeto_amar.dto.movimentacao.perda.PerdaRequestDTO;
+import school.sptech.projeto_amar.dto.movimentacao.saida.SaidaRequestDTO;
+import school.sptech.projeto_amar.dto.movimentacao.MovimentacaoResponseDTO;
 import school.sptech.projeto_amar.mapper.MovimentacaoMapping;
 import school.sptech.projeto_amar.service.MovimentacaoService;
 

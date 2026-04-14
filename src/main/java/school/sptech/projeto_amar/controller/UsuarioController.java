@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import school.sptech.projeto_amar.domain.Usuario;
-import school.sptech.projeto_amar.dto.request.UsuarioRequestDTO;
-import school.sptech.projeto_amar.dto.response.UsuarioResponseDTO;
+import school.sptech.projeto_amar.dto.usuario.UsuarioRequestDTO;
+import school.sptech.projeto_amar.dto.usuario.UsuarioResponseDTO;
 import school.sptech.projeto_amar.mapper.UsuarioMapping;
 import school.sptech.projeto_amar.service.UsuarioService;
 

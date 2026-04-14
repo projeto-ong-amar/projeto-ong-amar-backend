@@ -1,4 +1,4 @@
-package school.sptech.projeto_amar.dto.request;
+package school.sptech.projeto_amar.dto.movimentacao.entrada;
 
 import jakarta.validation.constraints.*;
 
