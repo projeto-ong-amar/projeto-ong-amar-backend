@@ -73,9 +73,19 @@ public class UsuarioController {
 
   @GetMapping
   @PreAuthorize("hasRole('ADMINISTRADOR')")
-  public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
-    List<UsuarioResponseDTO> usuarios = service.listarTodos().stream().map(UsuarioMapping::toResponse).toList();
-    return ResponseEntity.ok(usuarios);
+  public ResponseEntity<List<UsuarioResponseDTO>> listarTodos(
+          @RequestParam(required = false) String tipoUsuario
+  ) {
+      List<UsuarioResponseDTO> usuarios;
+
+      if (tipoUsuario != null) {
+          String tipoUsuarioUpper = tipoUsuario.toUpperCase();
+          usuarios = service.listarPorTipo(tipoUsuarioUpper).stream().map(UsuarioMapping::toResponse).toList();
+      } else {
+          usuarios = service.listarTodos().stream().map(UsuarioMapping::toResponse).toList();
+      }
+
+      return ResponseEntity.ok(usuarios);
   }
 
   @PutMapping("/{id}")

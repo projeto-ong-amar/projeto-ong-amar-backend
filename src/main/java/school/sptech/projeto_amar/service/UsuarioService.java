@@ -8,14 +8,17 @@ import org.springframework.stereotype.Service;
 
 import school.sptech.projeto_amar.config.GerenciadorTokenJwt;
 import school.sptech.projeto_amar.domain.Usuario;
+import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 import school.sptech.projeto_amar.dto.usuario.UsuarioTokenDTO;
 import school.sptech.projeto_amar.exception.usuarioExceptions.EmailJaCadastradoException;
 import school.sptech.projeto_amar.exception.usuarioExceptions.SemUsuariosCadastradosException;
+import school.sptech.projeto_amar.exception.usuarioExceptions.TipoInvalidoException;
 import school.sptech.projeto_amar.exception.usuarioExceptions.UsuarioNaoEncontradoException;
 import school.sptech.projeto_amar.mapper.UsuarioMapping;
 import school.sptech.projeto_amar.repository.UsuarioRepository;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class UsuarioService {
@@ -61,6 +64,21 @@ public class UsuarioService {
     List<Usuario> usuarios = repository.findAll();
     if (usuarios.isEmpty()) {
       throw new SemUsuariosCadastradosException();
+    }
+
+    return usuarios;
+  }
+
+  public List<Usuario> listarPorTipo(String tipoUsuario) {
+    if (!Objects.equals(tipoUsuario, TipoUsuario.ADMINISTRADOR.toString()) && !Objects.equals(tipoUsuario, TipoUsuario.VOLUNTARIO.toString())) {
+      throw new TipoInvalidoException();
+    }
+
+    TipoUsuario tipo = TipoUsuario.valueOf(tipoUsuario);
+    List<Usuario> usuarios = repository.findAllByTipoUsuario(tipo);
+
+    if (usuarios.isEmpty()) {
+      throw new UsuarioNaoEncontradoException();
     }
 
     return usuarios;
