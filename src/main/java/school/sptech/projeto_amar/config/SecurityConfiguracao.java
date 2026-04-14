@@ -1,6 +1,5 @@
 package school.sptech.projeto_amar.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,8 +30,11 @@ public class SecurityConfiguracao {
     @Value("${security.pepper}")
     private String pepper;
 
-    @Autowired
-    private AutenticacaoEntryPoint autenticacaoEntryPoint;
+    private final AutenticacaoEntryPoint autenticacaoEntryPoint;
+
+    public SecurityConfiguracao(AutenticacaoEntryPoint autenticacaoEntryPoint) {
+        this.autenticacaoEntryPoint = autenticacaoEntryPoint;
+    }
 
     private static final String[] URLS_PERMITIDAS = {
         "/usuarios/login",
@@ -73,7 +75,7 @@ public class SecurityConfiguracao {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth ->
                         auth.requestMatchers(URLS_PERMITIDAS).permitAll()
-                                .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
+                                .requestMatchers(HttpMethod.POST, "/usuarios/cadastrar").permitAll()
                                 .anyRequest().authenticated())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
