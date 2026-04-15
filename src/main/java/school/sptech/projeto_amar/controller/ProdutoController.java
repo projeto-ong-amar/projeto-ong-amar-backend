@@ -29,8 +29,17 @@ public class ProdutoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProdutoResponseDTO>> listar() {
-        List<ProdutoResponseDTO> retorno = service.listar().stream().map(ProdutoMapping::toResponse).toList();
+    public ResponseEntity<List<ProdutoResponseDTO>> listar(
+            @RequestParam(required = false) String categoria
+    ) {
+        List<ProdutoResponseDTO> retorno;
+        if (categoria != null) {
+            retorno = service.listarPorCategoria(categoria)
+                    .stream().map(ProdutoMapping::toResponse).toList();
+            return ResponseEntity.ok(retorno);
+        }
+
+        retorno = service.listar().stream().map(ProdutoMapping::toResponse).toList();
         return ResponseEntity.ok(retorno);
     }
 

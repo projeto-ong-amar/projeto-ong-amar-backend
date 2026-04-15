@@ -43,6 +43,18 @@ public class ProdutoService {
         return retorno;
     }
 
+    public List<Produto> listarPorCategoria(String categoria) {
+        if (!categoriaRepository.existsByNome(categoria)) {
+            throw new CategoriaNaoEncontradaException();
+        }
+
+        List<Produto> retorno = repository.findAllByCategoriaNome(categoria);
+        if (retorno.isEmpty()) {
+            throw new SemProdutosCadastradosException();
+        }
+        return retorno;
+    }
+
     public Produto atualizar(Integer id, Produto p) {
         if (!repository.existsById(id)) {
             throw new ProdutoNaoEncontradoException();

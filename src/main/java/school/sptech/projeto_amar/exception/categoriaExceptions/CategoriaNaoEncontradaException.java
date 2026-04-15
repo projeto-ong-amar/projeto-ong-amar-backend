@@ -8,4 +8,7 @@ public class CategoriaNaoEncontradaException extends RuntimeException {
     public CategoriaNaoEncontradaException(Integer id) {
         super("Categoria com o id %d não encontrada".formatted(id));
     }
+
+    public CategoriaNaoEncontradaException() {
+    }
 }
