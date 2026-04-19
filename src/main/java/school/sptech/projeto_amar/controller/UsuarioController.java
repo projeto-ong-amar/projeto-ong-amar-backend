@@ -1,10 +1,16 @@
 package school.sptech.projeto_amar.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import jakarta.servlet.http.Cookie;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -22,10 +28,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/usuarios")
+@Tag(name = "Usuários", description = "Endpoints para gerenciamento de usuários")
 public class UsuarioController {
+
     private UsuarioService service;
+
     @Value("${jwt.validity}")
     private Long jwtValidity;
+
     public static final String COOKIE_NOME = "authToken";
 
     public UsuarioController(UsuarioService service) {
@@ -33,8 +43,12 @@ public class UsuarioController {
     }
 
     @PostMapping("/cadastrar")
-    @Operation(summary = "Cadastrar um novo usuário")
-    @ApiResponse(responseCode = "201", description = "Usuário cadastrado com sucesso")
+    @Operation(summary = "Cadastrar usuário", description = "Cria um novo usuário no sistema. Requer perfil ADMINISTRADOR")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Usuário cadastrado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado")
+    })
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO u) {
         Usuario cadastrado = service.cadastrar(UsuarioMapping.toDomain(u));
@@ -42,14 +56,29 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Login", description = "Autentica o usuário e retorna um token via cookie HttpOnly")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Login realizado com sucesso",
+                    headers = @Header(
+                            name = "Set-Cookie",
+                            description = "authToken (HttpOnly, SameSite=Strict)",
+                            schema = @Schema(type = "string", example = "authToken=eyJhbGc...; Path=/; HttpOnly; SameSite=Strict")
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
+    })
+    public ResponseEntity<UsuarioSessaoDTO> login(
+            @Valid @RequestBody UsuarioLoginDTO loginDTO,
+            HttpServletResponse response) {
 
-    public ResponseEntity<UsuarioSessaoDTO> login(@Valid @RequestBody UsuarioLoginDTO loginDTO,
-                                                  HttpServletResponse response) {
         UsuarioTokenDTO tokenDTO = service.login(loginDTO.email(), loginDTO.senha());
 
         ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, tokenDTO.token())
                 .httpOnly(true)
-                .secure(false) // -> true em produção
+                .secure(false)
                 .sameSite("Strict")
                 .path("/")
                 .maxAge(Duration.ofSeconds(jwtValidity))
@@ -62,7 +91,13 @@ public class UsuarioController {
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "Logout", description = "Remove o cookie de autenticação do cliente")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Logout realizado com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
+    })
     public ResponseEntity<Void> logout(HttpServletResponse response) {
+
         ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, "")
                 .httpOnly(true)
                 .secure(false)
@@ -77,43 +112,58 @@ public class UsuarioController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar todos os usuários")
-    @ApiResponse(responseCode = "200", description = "Lista de usuários retornada com sucesso")
+    @Operation(summary = "Listar usuários", description = "Lista todos os usuários ou filtra por tipo. Requer perfil ADMINISTRADOR")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado")
+    })
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<UsuarioResponseDTO>> listarTodos(
-            @RequestParam(required = false) String tipoUsuario
-    ) {
+            @Parameter(description = "Tipo do usuário (ADMINISTRADOR ou VOLUNTARIO)")
+            @RequestParam(required = false) String tipoUsuario) {
+
         List<UsuarioResponseDTO> usuarios;
 
         if (tipoUsuario != null) {
-            String tipoUsuarioUpper = tipoUsuario.toUpperCase();
-            usuarios = service.listarPorTipo(tipoUsuarioUpper).stream().map(UsuarioMapping::toResponse).toList();
+            usuarios = service.listarPorTipo(tipoUsuario.toUpperCase())
+                    .stream().map(UsuarioMapping::toResponse).toList();
         } else {
-            usuarios = service.listarTodos().stream().map(UsuarioMapping::toResponse).toList();
+            usuarios = service.listarTodos()
+                    .stream().map(UsuarioMapping::toResponse).toList();
         }
 
         return ResponseEntity.ok(usuarios);
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar um usuário por ID")
-    @ApiResponse(responseCode = "200", description = "Usuário atualizado com sucesso")
+    @Operation(summary = "Atualizar usuário", description = "Atualiza os dados de um usuário pelo ID. Requer perfil ADMINISTRADOR")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Usuário atualizado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado"),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+    })
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<UsuarioResponseDTO> atualizar(@Valid @RequestBody UsuarioRequestDTO u,
-                                                        @PathVariable Integer id) {
+    public ResponseEntity<UsuarioResponseDTO> atualizar(
+            @Valid @RequestBody UsuarioRequestDTO u,
+            @Parameter(description = "ID do usuário") @PathVariable Integer id) {
+
         Usuario atualizado = service.atualizar(id, UsuarioMapping.toDomain(u));
         return ResponseEntity.ok(UsuarioMapping.toResponse(atualizado));
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Remover um usuário por ID")
-    @ApiResponse(responseCode = "204", description = "Usuário removido com sucesso")
+    @Operation(summary = "Remover usuário", description = "Remove um usuário pelo ID. Requer perfil ADMINISTRADOR")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Usuário removido com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado"),
+            @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+    })
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<Void> removerPorId(@PathVariable Integer id) {
+    public ResponseEntity<Void> removerPorId(
+            @Parameter(description = "ID do usuário") @PathVariable Integer id) {
+
         service.remover(id);
         return ResponseEntity.noContent().build();
     }
-
-
 }
-/// ////////////////////
