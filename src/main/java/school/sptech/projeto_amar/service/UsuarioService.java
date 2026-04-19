@@ -1,38 +1,82 @@
 package school.sptech.projeto_amar.service;
 
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import school.sptech.projeto_amar.config.GerenciadorTokenJwt;
 import school.sptech.projeto_amar.domain.Usuario;
-import school.sptech.projeto_amar.dto.response.UsuarioResponseDTO;
-import school.sptech.projeto_amar.exception.EmailJaCadastradoException;
-import school.sptech.projeto_amar.exception.SemUsuariosCadastradosException;
-import school.sptech.projeto_amar.exception.UsuarioNaoEncontradoException;
+import school.sptech.projeto_amar.domain.enums.TipoUsuario;
+import school.sptech.projeto_amar.dto.usuario.UsuarioTokenDTO;
+import school.sptech.projeto_amar.exception.usuarioExceptions.*;
 import school.sptech.projeto_amar.mapper.UsuarioMapping;
 import school.sptech.projeto_amar.repository.UsuarioRepository;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 
 @Service
 public class UsuarioService {
-  private UsuarioRepository repository;
+  private final UsuarioRepository repository;
+  private final PasswordEncoder passwordEncoder;
+  private final GerenciadorTokenJwt gerenciadorTokenJwt;
+  private final AuthenticationManager authenticationManager;
 
-  public UsuarioService(UsuarioRepository repository) {
+  public UsuarioService(UsuarioRepository repository,
+                        PasswordEncoder passwordEncoder,
+                        GerenciadorTokenJwt gerenciadorTokenJwt,
+                        AuthenticationManager authenticationManager) {
     this.repository = repository;
+    this.passwordEncoder = passwordEncoder;
+    this.gerenciadorTokenJwt = gerenciadorTokenJwt;
+    this.authenticationManager = authenticationManager;
   }
 
   public Usuario cadastrar(Usuario u) {
     if (repository.existsByEmail(u.getEmail())) {
       throw new EmailJaCadastradoException();
     }
-    repository.save(u);
-    return u;
+
+    String senhaHashed = passwordEncoder.encode(u.getSenha());
+    u.setSenha(senhaHashed);
+    u.setStatus("ATIVO");
+
+    return repository.save(u);
+  }
+
+  public UsuarioTokenDTO login(String email, String senha) {
+    UsernamePasswordAuthenticationToken credenciais = new UsernamePasswordAuthenticationToken(email, senha);
+
+    Authentication auth = authenticationManager.authenticate(credenciais);
+
+    String token = gerenciadorTokenJwt.generateToken(auth);
+
+    Usuario usuario = repository.findByEmail(email).orElseThrow(UsuarioNaoEncontradoException::new);
+
+    return UsuarioMapping.entityAndTokenToDTO(usuario, token);
   }
 
   public List<Usuario> listarTodos() {
-    List<Usuario> usuarios = repository.findAll();
+    List<Usuario> usuarios = repository.findAllByStatus("ATIVO");
     if (usuarios.isEmpty()) {
       throw new SemUsuariosCadastradosException();
+    }
+
+    return usuarios;
+  }
+
+  public List<Usuario> listarPorTipo(String tipoUsuario) {
+    if (!Objects.equals(tipoUsuario, TipoUsuario.ADMINISTRADOR.toString()) && !Objects.equals(tipoUsuario, TipoUsuario.VOLUNTARIO.toString())) {
+      throw new TipoInvalidoException();
+    }
+
+    TipoUsuario tipo = TipoUsuario.valueOf(tipoUsuario);
+    List<Usuario> usuarios = repository.findAllByTipoUsuarioAndStatus(tipo, "ATIVO");
+
+    if (usuarios.isEmpty()) {
+      throw new UsuarioNaoEncontradoException();
     }
 
     return usuarios;
@@ -46,17 +90,22 @@ public class UsuarioService {
     Usuario usuarioExistente = repository.findById(id).orElseThrow(UsuarioNaoEncontradoException::new);
     usuarioExistente.setNome(u.getNome());
     usuarioExistente.setEmail(u.getEmail());
-    usuarioExistente.setSenha(u.getSenha());
+    usuarioExistente.setSenha(passwordEncoder.encode(u.getSenha()));
 
     return repository.save(usuarioExistente);
   }
 
   public void remover(Integer id) {
-    if (!repository.existsById(id)) {
-      throw new UsuarioNaoEncontradoException();
-    }
+    Usuario usuario = repository.findById(id).orElseThrow(UsuarioNaoEncontradoException::new);
 
-    repository.deleteById(id);
+    if (usuario.getTipoUsuario().equals(TipoUsuario.ADMINISTRADOR)) {
+      List<Usuario> administradores = repository.findAllByTipoUsuarioAndStatus(TipoUsuario.ADMINISTRADOR, "Ativo");
+      if (administradores.size() <= 1) {
+        throw new ExcluirAdminException();
+      }
+    }
+    usuario.setStatus("INATIVO");
+    repository.save(usuario);
   }
 
 }

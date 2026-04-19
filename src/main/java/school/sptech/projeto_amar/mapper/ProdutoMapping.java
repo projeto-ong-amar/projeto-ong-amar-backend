@@ -2,8 +2,8 @@ package school.sptech.projeto_amar.mapper;
 
 import school.sptech.projeto_amar.domain.Categoria;
 import school.sptech.projeto_amar.domain.Produto;
-import school.sptech.projeto_amar.dto.request.ProdutoRequestDTO;
-import school.sptech.projeto_amar.dto.response.ProdutoResponseDTO;
+import school.sptech.projeto_amar.dto.produto.ProdutoRequestDTO;
+import school.sptech.projeto_amar.dto.produto.ProdutoResponseDTO;
 
 public class ProdutoMapping {
     public static Produto toDomain(ProdutoRequestDTO p) {
