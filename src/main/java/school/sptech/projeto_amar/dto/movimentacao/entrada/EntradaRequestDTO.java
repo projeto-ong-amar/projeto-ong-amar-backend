@@ -1,30 +1,38 @@
 package school.sptech.projeto_amar.dto.movimentacao.entrada;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 
-public record EntradaRequestDTO (
-    @Positive(message = "A quantidade deve ser positiva")
-    @NotNull(message = "A quantidade não pode ser nula")
-    Integer quantidade,
+@Schema(description = "Dados para registrar uma entrada de produto no estoque")
+public record EntradaRequestDTO(
 
-    @NotNull(message = "A data de entrada não pode ser nula.")
-    LocalDate dataEntrada,
+        @Schema(description = "Quantidade de itens recebidos", example = "50")
+        @NotNull @Positive
+        Integer quantidade,
 
-    @FutureOrPresent(message = "A data de validade deve ser no futuro ou no presente!")
-    LocalDate dataValidade,
+        @Schema(description = "Data em que a entrada foi realizada",
+                example = "2025-04-10", type = "string", format = "date")
+        @NotNull
+        LocalDate dataEntrada,
 
-    @NotBlank(message = "O motivo não pode estar vazio.")
-    @Size(min=3, max=255, message = "O motivo deve ter no mínimo 3 e no máximo 255 caracteres")
-    String motivo,
+        @Schema(description = "Data de validade do produto (opcional)",
+                example = "2026-12-31", type = "string", format = "date")
+        LocalDate dataValidade,
 
-    @NotNull(message = "A fkProduto não pode ser nula.")
-    @Positive(message = "A fkProduto deve ser positiva.")
-    Integer fkProduto,
+        @Schema(description = "Motivo da entrada",
+                example = "Doação recebida", minLength = 3, maxLength = 255)
+        @NotBlank @Size(min = 3, max = 255)
+        String motivo,
 
-    @NotNull(message = "A fkUsuario não pode ser nula.")
-    @Positive(message = "A fkUsuario deve ser positiva.")
-    Integer fkUsuario
+        @Schema(description = "ID do produto", example = "1")
+        @NotNull @Positive
+        Integer fkProduto,
+
+        @Schema(description = "ID do usuário responsável", example = "2")
+        @NotNull @Positive
+        Integer fkUsuario
+
 ) {
 }
