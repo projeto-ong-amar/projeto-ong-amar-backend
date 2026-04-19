@@ -2,19 +2,27 @@ package school.sptech.projeto_amar.dto.produto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(description = "Dados de retorno de um produto")
 public record ProdutoResponseDTO(
-        @Schema(example = "Arroz")
+
+        @Schema(description = "Nome do produto", example = "Arroz")
         String nome,
 
-        @Schema(example = "kg")
+        @Schema(description = "Unidade de medida", example = "kg")
         String unidadeMedida,
+
+        @Schema(description = "Categoria do produto")
         CategoriaProdutoDTO categoria
+
 ) {
+    @Schema(description = "Dados resumidos da categoria")
     public static class CategoriaProdutoDTO {
-        @Schema(example = "Alimentos")
+
+        @Schema(description = "Nome da categoria", example = "Alimentos")
         private String nome;
 
-        @Schema(example = "Produtos alimentícios em geral")
+        @Schema(description = "Descrição da categoria",
+                example = "Produtos alimentícios em geral")
         private String descricao;
 
         public String getNome() {
@@ -34,4 +42,3 @@ public record ProdutoResponseDTO(
         }
     }
 }
-/// ////////////////
