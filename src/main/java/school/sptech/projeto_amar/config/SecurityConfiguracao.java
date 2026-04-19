@@ -40,7 +40,7 @@ public class SecurityConfiguracao {
         "/usuarios/login",
             "/usuarios/logout",
             "/error",
-            "/swagger-ui",
+            "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**"
     };
