@@ -1,14 +1,19 @@
 package school.sptech.projeto_amar.dto.usuario;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+@Schema(description = "Credenciais para autenticação")
 public record UsuarioLoginDTO(
-        @NotBlank(message = "O email não pode estar vazio")
-        @Email(message = "O email deve ser válido")
+
+        @Schema(description = "Email do usuário", example = "joao@email.com")
+        @NotBlank @Email
         String email,
 
-        @NotBlank(message = "A senha não pode estar vazia")
+        @Schema(description = "Senha do usuário", example = "Senha@123")
+        @NotBlank
         String senha
+
 ) {
 }
