@@ -1,5 +1,10 @@
 package school.sptech.projeto_amar.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/movimentacao")
+@Tag(name = "Movimentações", description = "Endpoints para registro de movimentações de estoque")
 public class MovimentacaoController {
 
     private MovimentacaoService service;
@@ -25,39 +31,61 @@ public class MovimentacaoController {
     }
 
     @GetMapping
+    @Operation(summary = "Listar movimentações", description = "Lista movimentações com filtros opcionais por produto e/ou tipo")
+    @ApiResponse(responseCode = "200", description = "Lista de movimentações retornada com sucesso")
     public ResponseEntity<List<MovimentacaoResponseDTO>> listar(
-        @RequestParam(required = false) Integer produtoId,
-        @RequestParam(required = false) String tipo
-    ) {
+            @Parameter(description = "ID do produto para filtrar")
+            @RequestParam(required = false) Integer produtoId,
+            @Parameter(description = "Tipo da movimentação (ENTRADA, SAIDA, PERDA)")
+            @RequestParam(required = false) String tipo) {
+
         if (produtoId != null && tipo != null) {
             TipoMovimentacao tipoEnum = TipoMovimentacao.valueOf(tipo.toUpperCase());
-            return ResponseEntity.ok(service.listarPorTipoEProdutoId(tipoEnum, produtoId).stream().map(MovimentacaoMapping::toResponse).toList());
-        } else if (produtoId != null ) {
-            return ResponseEntity.ok(service.listarPorProdutoId(produtoId).stream().map(MovimentacaoMapping::toResponse).toList());
+            return ResponseEntity.ok(service.listarPorTipoEProdutoId(tipoEnum, produtoId)
+                    .stream().map(MovimentacaoMapping::toResponse).toList());
+        } else if (produtoId != null) {
+            return ResponseEntity.ok(service.listarPorProdutoId(produtoId)
+                    .stream().map(MovimentacaoMapping::toResponse).toList());
         } else if (tipo != null) {
             TipoMovimentacao tipoEnum = TipoMovimentacao.valueOf(tipo.toUpperCase());
-            return ResponseEntity.ok(service.listarPorTipo(tipoEnum).stream().map(MovimentacaoMapping::toResponse).toList());
+            return ResponseEntity.ok(service.listarPorTipo(tipoEnum)
+                    .stream().map(MovimentacaoMapping::toResponse).toList());
         } else {
-            return ResponseEntity.ok(service.listar().stream().map(MovimentacaoMapping::toResponse).toList());
+            return ResponseEntity.ok(service.listar()
+                    .stream().map(MovimentacaoMapping::toResponse).toList());
         }
     }
 
     @PostMapping("/entrada")
+    @Operation(summary = "Registrar entrada", description = "Registra uma nova entrada de produto no estoque")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Entrada registrada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
     public ResponseEntity<MovimentacaoResponseDTO> entrada(@Valid @RequestBody EntradaRequestDTO entrada) {
         Movimentacao movimentacao = service.entrada(entrada);
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
     }
 
     @PostMapping("/saida")
+    @Operation(summary = "Registrar saída", description = "Registra uma saída de produto do estoque")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Saída registrada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
     public ResponseEntity<MovimentacaoResponseDTO> saida(@Valid @RequestBody SaidaRequestDTO saida) {
         Movimentacao movimentacao = service.saida(saida);
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
     }
 
     @PostMapping("/perda")
+    @Operation(summary = "Registrar perda", description = "Registra uma perda de produto no estoque")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Perda registrada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos")
+    })
     public ResponseEntity<MovimentacaoResponseDTO> perda(@Valid @RequestBody PerdaRequestDTO perda) {
         Movimentacao movimentacao = service.perda(perda);
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
     }
-    
 }

@@ -4,7 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import school.sptech.projeto_amar.domain.Usuario;
 import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 
-import javax.swing.text.html.Option;
 import java.util.List;
 import java.util.Optional;
 

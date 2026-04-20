@@ -1,5 +1,6 @@
 package school.sptech.projeto_amar.dto.movimentacao.perda;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -7,29 +8,34 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
-public record PerdaRequestDTO (
-        @Positive(message = "A quantidade deve ser positiva")
-        @NotNull(message = "A quantidade não pode ser nula")
+@Schema(description = "Dados para registrar uma perda de produto no estoque")
+public record PerdaRequestDTO(
+
+        @Schema(description = "Quantidade de itens perdidos", example = "5")
+        @NotNull @Positive
         Integer quantidade,
 
-        @NotNull(message = "A data de perda não pode ser nula.")
+        @Schema(description = "Data em que a perda ocorreu",
+                example = "2025-04-12", type = "string", format = "date")
+        @NotNull
         LocalDate dataPerda,
 
-        @NotBlank(message = "O motivo não pode estar vazio.")
-        @Size(min=3, max=255, message = "O motivo deve ter no mínimo 3 e no máximo 255 caracteres")
+        @Schema(description = "Motivo da perda",
+                example = "Produto vencido", minLength = 3, maxLength = 255)
+        @NotBlank @Size(min = 3, max = 255)
         String motivo,
 
-        @NotNull(message = "A fkProduto não pode ser nula.")
-        @Positive(message = "A fkProduto deve ser positiva.")
+        @Schema(description = "ID do produto", example = "1")
+        @NotNull @Positive
         Integer fkProduto,
 
-        @NotNull(message = "A fkUsuario não pode ser nula.")
-        @Positive(message = "A fkUsuario deve ser positiva.")
+        @Schema(description = "ID do usuário responsável", example = "2")
+        @NotNull @Positive
         Integer fkUsuario,
 
-        @NotNull(message = "A fkLote não pode ser nula.")
-        @Positive(message = "A fkLote deve ser positiva.")
+        @Schema(description = "ID do lote relacionado à perda", example = "3")
+        @NotNull @Positive
         Integer fkLote
-) {
 
+) {
 }
