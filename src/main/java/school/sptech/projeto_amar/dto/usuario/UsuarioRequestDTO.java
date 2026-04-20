@@ -9,16 +9,20 @@ public record UsuarioRequestDTO(
 
         @Schema(description = "Nome completo do usuário", example = "João Silva",
                 minLength = 3, maxLength = 255)
-        @NotBlank @Size(min = 3, max = 255)
+        @NotBlank
+        @Size(min = 3, max = 255)
         String nome,
 
         @Schema(description = "Email do usuário", example = "joao@email.com")
-        @NotBlank @Email
+        @NotBlank
+        @Email
         String email,
 
         @Schema(description = "Senha (mín. 8 chars, maiúscula, minúscula, número e caractere especial)",
                 example = "Senha@123", minLength = 5, maxLength = 25)
-        @NotBlank @Size(min = 5, max = 25) @Pattern(regexp = "...")
+        @NotBlank
+        @Size(min = 5, max = 25)
+        @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{5,}$")
         String senha,
 
         @Schema(description = "Tipo/perfil do usuário",
@@ -28,7 +32,8 @@ public record UsuarioRequestDTO(
 
         @Schema(description = "Status do usuário", example = "Ativo",
                 minLength = 3, maxLength = 255)
-        @NotBlank @Size(min = 3, max = 255)
+        @NotBlank
+        @Size(min = 3, max = 255)
         String status
 
 ) {
