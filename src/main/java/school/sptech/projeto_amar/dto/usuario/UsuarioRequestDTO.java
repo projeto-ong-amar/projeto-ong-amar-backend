@@ -19,10 +19,10 @@ public record UsuarioRequestDTO(
         String email,
 
         @Schema(description = "Senha (mín. 8 chars, maiúscula, minúscula, número e caractere especial)",
-                example = "Senha@123", minLength = 5, maxLength = 25)
+                example = "Senha@123", minLength = 8, maxLength = 25)
         @NotBlank
         @Size(min = 5, max = 25)
-        @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{5,}$")
+        @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$")
         String senha,
 
         @Schema(description = "Tipo/perfil do usuário",
