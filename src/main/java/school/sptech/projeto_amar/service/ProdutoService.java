@@ -3,10 +3,10 @@ package school.sptech.projeto_amar.service;
 import org.springframework.stereotype.Service;
 import school.sptech.projeto_amar.domain.Categoria;
 import school.sptech.projeto_amar.domain.Produto;
-import school.sptech.projeto_amar.exception.CategoriaNaoEncontradaException;
-import school.sptech.projeto_amar.exception.ExisteProdutoByNomeException;
-import school.sptech.projeto_amar.exception.ProdutoNaoEncontradoException;
-import school.sptech.projeto_amar.exception.SemProdutosCadastradosException;
+import school.sptech.projeto_amar.exception.categoriaExceptions.CategoriaNaoEncontradaException;
+import school.sptech.projeto_amar.exception.produtoExceptions.ExisteProdutoByNomeException;
+import school.sptech.projeto_amar.exception.produtoExceptions.ProdutoNaoEncontradoException;
+import school.sptech.projeto_amar.exception.produtoExceptions.SemProdutosCadastradosException;
 import school.sptech.projeto_amar.repository.CategoriaRepository;
 import school.sptech.projeto_amar.repository.ProdutoRepository;
 
@@ -40,6 +40,18 @@ public class ProdutoService {
             throw new SemProdutosCadastradosException();
         }
 
+        return retorno;
+    }
+
+    public List<Produto> listarPorCategoria(String categoria) {
+        if (!categoriaRepository.existsByNome(categoria)) {
+            throw new CategoriaNaoEncontradaException();
+        }
+
+        List<Produto> retorno = repository.findAllByCategoriaNome(categoria);
+        if (retorno.isEmpty()) {
+            throw new SemProdutosCadastradosException();
+        }
         return retorno;
     }
 
