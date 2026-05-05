@@ -8,5 +8,11 @@ import java.util.List;
 public interface ProdutoRepository extends JpaRepository<Produto, Integer> {
     Boolean existsByNome(String nome);
 
+    Boolean existsByNomeAndStatus(String nome, String status);
+
+    List<Produto> findAllByStatus(String status);
+
     List<Produto> findAllByCategoriaNome(String categoria);
+
+    List<Produto> findAllByCategoriaNomeAndStatus(String categoria, String status);
 }

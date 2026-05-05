@@ -14,8 +14,11 @@ import java.util.List;
 
 @Service
 public class ProdutoService {
-    private ProdutoRepository repository;
-    private CategoriaRepository categoriaRepository;
+    private static final String STATUS_ATIVO = "ATIVO";
+    private static final String STATUS_INATIVO = "INATIVO";
+
+    private final ProdutoRepository repository;
+    private final CategoriaRepository categoriaRepository;
 
     public ProdutoService(ProdutoRepository repository, CategoriaRepository categoriaRepository) {
         this.repository = repository;
@@ -23,19 +26,20 @@ public class ProdutoService {
     }
 
     public Produto cadastrar(Produto p) {
-        if (repository.existsByNome(p.getNome())) {
+        if (repository.existsByNomeAndStatus(p.getNome(), STATUS_ATIVO)) {
             throw new ExisteProdutoByNomeException();
         }
 
         Categoria categoria = categoriaRepository.findById(p.getCategoria().getId())
                 .orElseThrow(() -> new CategoriaNaoEncontradaException(p.getCategoria().getId()));
         p.setCategoria(categoria);
+        p.setStatus(STATUS_ATIVO);
 
         return repository.save(p);
     }
 
     public List<Produto> listar() {
-        List<Produto> retorno = repository.findAll();
+        List<Produto> retorno = repository.findAllByStatus(STATUS_ATIVO);
         if (retorno.isEmpty()) {
             throw new SemProdutosCadastradosException();
         }
@@ -48,7 +52,7 @@ public class ProdutoService {
             throw new CategoriaNaoEncontradaException();
         }
 
-        List<Produto> retorno = repository.findAllByCategoriaNome(categoria);
+        List<Produto> retorno = repository.findAllByCategoriaNomeAndStatus(categoria, STATUS_ATIVO);
         if (retorno.isEmpty()) {
             throw new SemProdutosCadastradosException();
         }
@@ -56,16 +60,17 @@ public class ProdutoService {
     }
 
     public Produto atualizar(Integer id, Produto p) {
-        if (!repository.existsById(id)) {
+        Produto produtoExistente = repository.findById(id)
+                .orElseThrow(ProdutoNaoEncontradoException::new);
+
+        if (STATUS_INATIVO.equals(produtoExistente.getStatus())) {
             throw new ProdutoNaoEncontradoException();
         }
 
-        Produto produtoExistente = repository.findById(id).orElseThrow(ProdutoNaoEncontradoException::new);
         Categoria categoria = categoriaRepository.findById(p.getCategoria().getId())
                 .orElseThrow(() -> new CategoriaNaoEncontradaException(p.getCategoria().getId()));
 
         produtoExistente.setNome(p.getNome());
-        produtoExistente.setCategoria(p.getCategoria());
         produtoExistente.setUnidadeMedida(p.getUnidadeMedida());
         produtoExistente.setCategoria(categoria);
 
@@ -73,9 +78,15 @@ public class ProdutoService {
     }
 
     public void removerPorId(Integer id) {
-        if (!repository.existsById(id)) {
+        Produto produto = repository.findById(id).orElseThrow(
+                ProdutoNaoEncontradoException::new
+        );
+
+        if (STATUS_INATIVO.equals(produto.getStatus())) {
             throw new ProdutoNaoEncontradoException();
         }
-        repository.deleteById(id);
+
+        produto.setStatus(STATUS_INATIVO);
+        repository.save(produto);
     }
 }

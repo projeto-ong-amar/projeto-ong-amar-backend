@@ -11,6 +11,7 @@
         id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
         nome VARCHAR(45) NOT NULL,
         unidade_medida VARCHAR(45),
+        status VARCHAR(45) NOT NULL DEFAULT 'ATIVO',
         fk_categoria INT NOT NULL,
         CONSTRAINT fk_item_categoria FOREIGN KEY (fk_categoria) REFERENCES categoria(id)
     );

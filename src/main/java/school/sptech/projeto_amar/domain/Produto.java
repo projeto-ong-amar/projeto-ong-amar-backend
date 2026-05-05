@@ -11,6 +11,8 @@ public class Produto {
     private String nome;
     private String unidadeMedida;
 
+    private String status;
+
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "fk_categoria", nullable = false)
     private Categoria categoria;
@@ -37,6 +39,14 @@ public class Produto {
 
     public void setUnidadeMedida(String unidadeMedida) {
         this.unidadeMedida = unidadeMedida;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public Categoria getCategoria() {

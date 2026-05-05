@@ -82,7 +82,7 @@ public class ProdutoController {
             @ApiResponse(responseCode = "403", description = "Acesso negado"),
             @ApiResponse(responseCode = "404", description = "Produto não encontrado")
     })
-    @PreAuthorize("hasRole('VOLUNTARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> removerPorId(
             @Parameter(description = "ID do produto") @PathVariable Integer id) {
 
