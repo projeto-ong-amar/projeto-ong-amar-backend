@@ -7,11 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.domain.Categoria;
 import school.sptech.projeto_amar.dto.categoria.CategoriaRequestDTO;
 import school.sptech.projeto_amar.dto.categoria.CategoriaResponseDTO;
@@ -51,5 +47,19 @@ public class CategoriaController {
         List<CategoriaResponseDTO> retorno = service.listar()
                 .stream().map(CategoriaMapping::toResponse).toList();
         return ResponseEntity.ok(retorno);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<CategoriaResponseDTO> atualizar(@PathVariable Integer id,
+                                                          @Valid @RequestBody CategoriaRequestDTO categoria) {
+        return ResponseEntity.ok(CategoriaMapping.toResponse(service.atualizar(id, categoria)));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Void> remover(@PathVariable Integer id) {
+        service.remover(id);
+        return ResponseEntity.noContent().build();
     }
 }
