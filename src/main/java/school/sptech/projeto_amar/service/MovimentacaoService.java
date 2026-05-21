@@ -1,12 +1,14 @@
 package school.sptech.projeto_amar.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import school.sptech.projeto_amar.domain.*;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.movimentacao.entrada.EntradaRequestDTO;
 import school.sptech.projeto_amar.dto.movimentacao.perda.PerdaRequestDTO;
 import school.sptech.projeto_amar.dto.movimentacao.saida.SaidaRequestDTO;
 import school.sptech.projeto_amar.exception.movimentacaoExceptions.EstoqueInsuficienteException;
+import school.sptech.projeto_amar.exception.movimentacaoExceptions.MovimentacaoNaoEncontradaException;
 import school.sptech.projeto_amar.exception.movimentacaoExceptions.SemMovimentacoesException;
 import school.sptech.projeto_amar.exception.produtoExceptions.ProdutoNaoEncontradoException;
 import school.sptech.projeto_amar.exception.produtoLoteExceptions.LoteNaoEncontradoException;
@@ -104,6 +106,79 @@ public class MovimentacaoService {
         return mov;
     }
 
+    @Transactional
+    public Movimentacao atualizarEntrada(EntradaRequestDTO entrada, Integer id) {
+        Movimentacao m = repository.findById(id).orElseThrow(() ->
+                new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        if (m.getTipo() != TipoMovimentacao.ENTRADA) {
+            throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma entrada");
+        }
+
+        Produto produto = produtoRepository.findById(entrada.fkProduto())
+                .orElseThrow(ProdutoNaoEncontradoException::new);
+
+        Usuario usuario = usuarioRepository.findById(entrada.fkUsuario())
+                .orElseThrow(UsuarioNaoEncontradoException::new);
+
+        MovimentacaoEstoque movEstoque = movimentacaoEstoqueRepository
+                .findFirstByMovimentacaoId(id)
+                .orElseThrow(() -> new MovimentacaoNaoEncontradaException("Item de estoque da movimentação não encontrado"));
+
+        ProdutoLote lote = movEstoque.getProdutoLote();
+
+        Integer diferencaQuantidade = entrada.quantidade() - m.getQuantidade();
+        Integer quantidadeAtualLote = lote.getQuantidade();
+
+        if (quantidadeAtualLote + diferencaQuantidade < 0) {
+            throw new EstoqueInsuficienteException(quantidadeAtualLote);
+        }
+
+        lote.setQuantidade(quantidadeAtualLote + diferencaQuantidade);
+        lote.setDataEntrada(entrada.dataEntrada());
+        lote.setValidade(entrada.dataValidade());
+        lote.setProduto(produto);
+        produtoLoteRepository.save(lote);
+
+        m.setMotivo(entrada.motivo());
+        m.setQuantidade(entrada.quantidade());
+        m.setProduto(produto);
+        m.setUsuario(usuario);
+        repository.save(m);
+
+        movEstoque.setQuantidade(entrada.quantidade());
+        movimentacaoEstoqueRepository.save(movEstoque);
+
+        return m;
+    }
+
+    @Transactional
+    public void removerEntrada(Integer id) {
+        Movimentacao m = repository.findById(id).orElseThrow(() ->
+                new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        if (m.getTipo() != TipoMovimentacao.ENTRADA) {
+            throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma entrada");
+        }
+
+        MovimentacaoEstoque movEstoque = movimentacaoEstoqueRepository
+                .findFirstByMovimentacaoId(id)
+                .orElseThrow(() -> new MovimentacaoNaoEncontradaException("Item de estoque da movimentação não encontrado"));
+
+        ProdutoLote lote = movEstoque.getProdutoLote();
+        int quantidadeResultante = lote.getQuantidade() - movEstoque.getQuantidade();
+
+        if (quantidadeResultante < 0) {
+            throw new EstoqueInsuficienteException(lote.getQuantidade());
+        }
+
+        lote.setQuantidade(quantidadeResultante);
+        produtoLoteRepository.save(lote);
+
+        movimentacaoEstoqueRepository.delete(movEstoque);
+        repository.delete(m);
+    }
+
     public Movimentacao saida(SaidaRequestDTO saida){
         Produto produto =
                 produtoRepository.findById(saida.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
@@ -151,6 +226,97 @@ public class MovimentacaoService {
         return mov;
     }
 
+    @Transactional
+    public Movimentacao atualizarSaida(SaidaRequestDTO saida, Integer id) {
+        Movimentacao m = repository.findById(id).orElseThrow(() ->
+                new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        if (m.getTipo() != TipoMovimentacao.SAIDA) {
+            throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma saída");
+        }
+
+        Produto produto = produtoRepository.findById(saida.fkProduto())
+                .orElseThrow(ProdutoNaoEncontradoException::new);
+
+        Usuario usuario = usuarioRepository.findById(saida.fkUsuario())
+                .orElseThrow(UsuarioNaoEncontradoException::new);
+
+        List<MovimentacaoEstoque> itensAntigos = movimentacaoEstoqueRepository.findByMovimentacaoId(id);
+
+        if (itensAntigos.isEmpty()) {
+            throw new MovimentacaoNaoEncontradaException("Itens de estoque da movimentação não encontrados");
+        }
+
+        for (MovimentacaoEstoque item : itensAntigos) {
+            ProdutoLote loteAntigo = item.getProdutoLote();
+            loteAntigo.setQuantidade(loteAntigo.getQuantidade() + item.getQuantidade());
+            produtoLoteRepository.save(loteAntigo);
+        }
+
+        movimentacaoEstoqueRepository.deleteAll(itensAntigos);
+
+        Integer estoqueTotal = calcularEstoqueTotal(produto.getId());
+
+        if (estoqueTotal < saida.quantidade()) {
+            throw new EstoqueInsuficienteException(estoqueTotal);
+        }
+
+        List<ProdutoLote> lotes = produtoLoteRepository
+                .findByProdutoIdAndQuantidadeGreaterThanOrderByValidadeAsc(produto.getId(), 0);
+
+        int quantidadeRestante = saida.quantidade();
+
+        for (ProdutoLote lote : lotes) {
+            if (quantidadeRestante <= 0) break;
+
+            Integer retirar = Math.min(lote.getQuantidade(), quantidadeRestante);
+
+            lote.setQuantidade(lote.getQuantidade() - retirar);
+            produtoLoteRepository.save(lote);
+
+            MovimentacaoEstoque novoItem = new MovimentacaoEstoque();
+            novoItem.setMovimentacao(m);
+            novoItem.setProdutoLote(lote);
+            novoItem.setQuantidade(retirar);
+            movimentacaoEstoqueRepository.save(novoItem);
+
+            quantidadeRestante -= retirar;
+        }
+
+        m.setMotivo(saida.motivo());
+        m.setQuantidade(saida.quantidade());
+        m.setProduto(produto);
+        m.setUsuario(usuario);
+        repository.save(m);
+
+        return m;
+    }
+
+    @Transactional
+    public void removerSaida(Integer id) {
+        Movimentacao m = repository.findById(id).orElseThrow(() ->
+                new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        if (m.getTipo() != TipoMovimentacao.SAIDA) {
+            throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma saída");
+        }
+
+        List<MovimentacaoEstoque> itens = movimentacaoEstoqueRepository.findByMovimentacaoId(id);
+
+        if (itens.isEmpty()) {
+            throw new MovimentacaoNaoEncontradaException("Itens de estoque da movimentação não encontrados");
+        }
+
+        for (MovimentacaoEstoque item : itens) {
+            ProdutoLote lote = item.getProdutoLote();
+            lote.setQuantidade(lote.getQuantidade() + item.getQuantidade());
+            produtoLoteRepository.save(lote);
+        }
+
+        movimentacaoEstoqueRepository.deleteAll(itens);
+        repository.delete(m);
+    }
+
     public Movimentacao perda(PerdaRequestDTO perda) {
         Produto produto = produtoRepository.findById(perda.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
         Usuario usuario = usuarioRepository.findById(perda.fkUsuario()).orElseThrow(UsuarioNaoEncontradoException::new);
@@ -187,7 +353,81 @@ public class MovimentacaoService {
         return mov;
     }
 
+    @Transactional
+    public Movimentacao atualizarPerda(PerdaRequestDTO perda, Integer id) {
+        Movimentacao m = repository.findById(id).orElseThrow(() ->
+                new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        if (m.getTipo() != TipoMovimentacao.PERDA) {
+            throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma perda");
+        }
+
+        Produto produto = produtoRepository.findById(perda.fkProduto())
+                .orElseThrow(ProdutoNaoEncontradoException::new);
+
+        Usuario usuario = usuarioRepository.findById(perda.fkUsuario())
+                .orElseThrow(UsuarioNaoEncontradoException::new);
+
+        ProdutoLote novoLote = produtoLoteRepository.findById(perda.fkLote())
+                .orElseThrow(LoteNaoEncontradoException::new);
+
+        MovimentacaoEstoque movEstoque = movimentacaoEstoqueRepository
+                .findFirstByMovimentacaoId(id)
+                .orElseThrow(() -> new MovimentacaoNaoEncontradaException("Item de estoque da movimentação não encontrado"));
+
+        ProdutoLote loteAnterior = movEstoque.getProdutoLote();
+        loteAnterior.setQuantidade(loteAnterior.getQuantidade() + movEstoque.getQuantidade());
+        produtoLoteRepository.save(loteAnterior);
+
+        Integer estoqueTotal = calcularEstoqueTotal(produto.getId());
+
+        if (estoqueTotal < perda.quantidade()) {
+            throw new EstoqueInsuficienteException(estoqueTotal);
+        }
+
+        if (novoLote.getQuantidade() < perda.quantidade()) {
+            throw new EstoqueInsuficienteException(novoLote.getQuantidade());
+        }
+
+        novoLote.setQuantidade(novoLote.getQuantidade() - perda.quantidade());
+        produtoLoteRepository.save(novoLote);
+
+        m.setMotivo(perda.motivo());
+        m.setQuantidade(perda.quantidade());
+        m.setProduto(produto);
+        m.setUsuario(usuario);
+        repository.save(m);
+
+        movEstoque.setProdutoLote(novoLote);
+        movEstoque.setQuantidade(perda.quantidade());
+        movimentacaoEstoqueRepository.save(movEstoque);
+
+        return m;
+    }
+
+    @Transactional
+    public void removerPerda(Integer id) {
+        Movimentacao m = repository.findById(id).orElseThrow(() ->
+                new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        if (m.getTipo() != TipoMovimentacao.PERDA) {
+            throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma perda");
+        }
+
+        MovimentacaoEstoque movEstoque = movimentacaoEstoqueRepository
+                .findFirstByMovimentacaoId(id)
+                .orElseThrow(() -> new MovimentacaoNaoEncontradaException("Item de estoque da movimentação não encontrado"));
+
+        ProdutoLote lote = movEstoque.getProdutoLote();
+        lote.setQuantidade(lote.getQuantidade() + movEstoque.getQuantidade());
+        produtoLoteRepository.save(lote);
+
+        movimentacaoEstoqueRepository.delete(movEstoque);
+        repository.delete(m);
+    }
+
     public Integer calcularEstoqueTotal(Integer produtoId) {
-        return produtoLoteRepository.sumQuantidadeByProdutoId(produtoId);
+        Integer quantidade = produtoLoteRepository.sumQuantidadeByProdutoId(produtoId);
+        return quantidade == null ? 0 : quantidade;
     }
 }

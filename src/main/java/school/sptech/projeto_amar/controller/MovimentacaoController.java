@@ -67,6 +67,18 @@ public class MovimentacaoController {
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
     }
 
+    @PutMapping("/entrada/{id}")
+    public ResponseEntity<MovimentacaoResponseDTO> atualizarEntrada(@Valid @RequestBody EntradaRequestDTO entrada,
+                                                                    @PathVariable Integer id) {
+        return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarEntrada(entrada, id)));
+    }
+
+    @DeleteMapping("/entrada/{id}")
+    public ResponseEntity<Void> removerEntrada(@PathVariable Integer id) {
+        service.removerEntrada(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/saida")
     @Operation(summary = "Registrar saída", description = "Registra uma saída de produto do estoque")
     @ApiResponses({
@@ -78,6 +90,18 @@ public class MovimentacaoController {
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
     }
 
+    @PutMapping("/saida/{id}")
+    public ResponseEntity<MovimentacaoResponseDTO> atualizarSaida(@Valid @RequestBody SaidaRequestDTO saida,
+                                                                   @PathVariable Integer id) {
+        return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarSaida(saida, id)));
+    }
+
+    @DeleteMapping("/saida/{id}")
+    public ResponseEntity<Void> removerSaida(@PathVariable Integer id) {
+        service.removerSaida(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/perda")
     @Operation(summary = "Registrar perda", description = "Registra uma perda de produto no estoque")
     @ApiResponses({
@@ -87,5 +111,17 @@ public class MovimentacaoController {
     public ResponseEntity<MovimentacaoResponseDTO> perda(@Valid @RequestBody PerdaRequestDTO perda) {
         Movimentacao movimentacao = service.perda(perda);
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
+    }
+
+    @PutMapping("/perda/{id}")
+    public ResponseEntity<MovimentacaoResponseDTO> atualizarPerda(@Valid @RequestBody PerdaRequestDTO perda,
+                                                                   @PathVariable Integer id) {
+        return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarPerda(perda, id)));
+    }
+
+    @DeleteMapping("/perda/{id}")
+    public ResponseEntity<Void> removerPerda(@PathVariable Integer id) {
+        service.removerPerda(id);
+        return ResponseEntity.noContent().build();
     }
 }
