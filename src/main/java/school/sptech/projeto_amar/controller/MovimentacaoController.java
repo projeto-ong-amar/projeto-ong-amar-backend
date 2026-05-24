@@ -68,12 +68,15 @@ public class MovimentacaoController {
     }
 
     @PutMapping("/entrada/{id}")
-    public ResponseEntity<MovimentacaoResponseDTO> atualizarEntrada(@Valid @RequestBody EntradaRequestDTO entrada,
-                                                                    @PathVariable Integer id) {
+    @Operation(summary = "Atualizar entrada", description = "Atualiza uma movimentação de entrada existente")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Entrada atualizada com sucesso"), @ApiResponse(responseCode = "400", description = "Dados inválidos"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
+    public ResponseEntity<MovimentacaoResponseDTO> atualizarEntrada(@Valid @RequestBody EntradaRequestDTO entrada, @PathVariable Integer id) {
         return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarEntrada(entrada, id)));
     }
 
     @DeleteMapping("/entrada/{id}")
+    @Operation(summary = "Remover entrada", description = "Remove uma movimentação de entrada do sistema")
+    @ApiResponses({@ApiResponse(responseCode = "204", description = "Entrada removida com sucesso"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
     public ResponseEntity<Void> removerEntrada(@PathVariable Integer id) {
         service.removerEntrada(id);
         return ResponseEntity.noContent().build();
@@ -91,12 +94,15 @@ public class MovimentacaoController {
     }
 
     @PutMapping("/saida/{id}")
-    public ResponseEntity<MovimentacaoResponseDTO> atualizarSaida(@Valid @RequestBody SaidaRequestDTO saida,
-                                                                   @PathVariable Integer id) {
+    @Operation(summary = "Atualizar saída", description = "Atualiza uma movimentação de saída existente")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Saída atualizada com sucesso"), @ApiResponse(responseCode = "400", description = "Dados inválidos"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
+    public ResponseEntity<MovimentacaoResponseDTO> atualizarSaida(@Valid @RequestBody SaidaRequestDTO saida, @PathVariable Integer id) {
         return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarSaida(saida, id)));
     }
 
     @DeleteMapping("/saida/{id}")
+    @Operation(summary = "Remover saída", description = "Remove uma movimentação de saída do sistema")
+    @ApiResponses({@ApiResponse(responseCode = "204", description = "Saída removida com sucesso"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
     public ResponseEntity<Void> removerSaida(@PathVariable Integer id) {
         service.removerSaida(id);
         return ResponseEntity.noContent().build();
@@ -114,12 +120,15 @@ public class MovimentacaoController {
     }
 
     @PutMapping("/perda/{id}")
-    public ResponseEntity<MovimentacaoResponseDTO> atualizarPerda(@Valid @RequestBody PerdaRequestDTO perda,
-                                                                   @PathVariable Integer id) {
+    @Operation(summary = "Atualizar perda", description = "Atualiza uma movimentação de perda existente")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "Perda atualizada com sucesso"), @ApiResponse(responseCode = "400", description = "Dados inválidos"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
+    public ResponseEntity<MovimentacaoResponseDTO> atualizarPerda(@Valid @RequestBody PerdaRequestDTO perda, @PathVariable Integer id) {
         return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarPerda(perda, id)));
     }
 
     @DeleteMapping("/perda/{id}")
+    @Operation(summary = "Remover perda", description = "Remove uma movimentação de perda do sistema")
+    @ApiResponses({@ApiResponse(responseCode = "204", description = "Perda removida com sucesso"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
     public ResponseEntity<Void> removerPerda(@PathVariable Integer id) {
         service.removerPerda(id);
         return ResponseEntity.noContent().build();
