@@ -41,7 +41,7 @@ public class CategoriaController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar categorias", description = "Retorna a lista de todas as categorias cadastradas")
+    @Operation(summary = "Listar categorias", description = "Retorna a lista de todas as categorias cadastradas. Requer perfil ADMINISTRADOR")
     @ApiResponse(responseCode = "200", description = "Lista de categorias retornada com sucesso")
     public ResponseEntity<List<CategoriaResponseDTO>> listar() {
         List<CategoriaResponseDTO> retorno = service.listar()
@@ -50,13 +50,30 @@ public class CategoriaController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Atualizar categoria", description = "Atualiza os dados de uma categoria existente. Requer perfil ADMINISTRADOR")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Categoria atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado"),
+            @ApiResponse(responseCode = "404", description = "Categoria não encontrada")
+    })
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<CategoriaResponseDTO> atualizar(@PathVariable Integer id,
-                                                          @Valid @RequestBody CategoriaRequestDTO categoria) {
-        return ResponseEntity.ok(CategoriaMapping.toResponse(service.atualizar(id, categoria)));
+    public ResponseEntity<CategoriaResponseDTO> atualizar(
+            @PathVariable Integer id,
+            @Valid @RequestBody CategoriaRequestDTO categoria
+    ) {
+        return ResponseEntity.ok(
+                CategoriaMapping.toResponse(service.atualizar(id, categoria))
+        );
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Remover categoria", description = "Remove uma categoria existente do sistema. Requer perfil ADMINISTRADOR")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Categoria removida com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado"),
+            @ApiResponse(responseCode = "404", description = "Categoria não encontrada")
+    })
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> remover(@PathVariable Integer id) {
         service.remover(id);
