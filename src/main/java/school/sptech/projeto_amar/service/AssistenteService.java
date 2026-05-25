@@ -138,8 +138,9 @@ public class AssistenteService {
                     "stream", false,
                     "format", "json",
                     "options", Map.of(
-                            "temperature", 0.7,
-                            "num_predict", 180
+                            "temperature", 1,
+                            "num_predict", 800,
+                            "num_ctx", 4096
                     )
             );
 
