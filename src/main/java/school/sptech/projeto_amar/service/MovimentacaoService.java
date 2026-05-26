@@ -110,7 +110,7 @@ public class MovimentacaoService {
     }
 
     public Page<Movimentacao> listarHistoricoEntrada(Pageable pageable) {
-        Page<Movimentacao> page = repository.findByTipoOrderByDataHoraDesc(TipoMovimentacao.ENTRADA, pageable);
+        Page<Movimentacao> page = repository.findByTipoOrderByDataDesc(TipoMovimentacao.ENTRADA, pageable);
         return page;
     }
 

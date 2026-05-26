@@ -86,11 +86,9 @@ public class MovimentacaoController {
     public ResponseEntity<Page<MovimentacaoHistoricoResponseDTO>> listarHistoricoEntradas(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
-    ){
-        Page<MovimentacaoHistoricoResponseDTO> historico =
-                MovimentacaoMapping.toMovimentacaoHistorico(
-                        service.listarHistoricoEntrada(PageRequest.of(page,
-                        size)));
+    ){ 
+        Page<MovimentacaoHistoricoResponseDTO> historico = service.listarHistoricoEntrada(PageRequest.of(page, size))
+        .map(MovimentacaoMapping::toMovimentacaoHistorico);
         return ResponseEntity.ok(historico);
     }
 
