@@ -114,6 +114,12 @@ public class MovimentacaoService {
         return page;
     }
 
+    public Page<Movimentacao> listarHistoricoSaida(Pageable pageable) {
+        Page<Movimentacao> page = repository.findByTipoInOrderByDataDesc(
+                List.of(TipoMovimentacao.SAIDA, TipoMovimentacao.PERDA), pageable);
+        return page;
+    }
+
     @Transactional
     public Movimentacao atualizarEntrada(EntradaRequestDTO entrada, Integer id) {
         Movimentacao m = repository.findById(id).orElseThrow(() ->

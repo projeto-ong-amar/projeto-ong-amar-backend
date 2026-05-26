@@ -13,4 +13,5 @@ public interface MovimentacaoRepository extends JpaRepository<Movimentacao, Inte
   List<Movimentacao> findByProdutoId(Integer produtoId);
   List<Movimentacao> findByTipo(TipoMovimentacao tipo);
   Page<Movimentacao> findByTipoOrderByDataDesc(TipoMovimentacao tipo, Pageable pageable);
+  Page<Movimentacao> findByTipoInOrderByDataDesc(List<TipoMovimentacao> tipos, Pageable pageable);
 }

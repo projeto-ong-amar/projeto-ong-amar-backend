@@ -21,6 +21,9 @@ import school.sptech.projeto_amar.mapper.MovimentacaoMapping;
 import school.sptech.projeto_amar.service.MovimentacaoService;
 
 import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequestMapping("/movimentacao")
@@ -91,6 +94,16 @@ public class MovimentacaoController {
         .map(MovimentacaoMapping::toMovimentacaoHistorico);
         return ResponseEntity.ok(historico);
     }
+
+    @GetMapping("/saida/historico")
+    public ResponseEntity<Page<MovimentacaoHistoricoResponseDTO>> listarHistoricoSaida(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size) {
+        Page<MovimentacaoHistoricoResponseDTO> historico = service.listarHistoricoSaida(PageRequest.of(page, size))
+        .map(MovimentacaoMapping::toMovimentacaoHistorico);
+        return ResponseEntity.ok(historico);
+    }
+    
 
     @PostMapping("/saida")
     @Operation(summary = "Registrar saída", description = "Registra uma saída de produto do estoque")
