@@ -1,10 +1,12 @@
 package school.sptech.projeto_amar.service;
 
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import school.sptech.projeto_amar.domain.*;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.movimentacao.entrada.EntradaRequestDTO;
+import school.sptech.projeto_amar.dto.movimentacao.entrada.MovimentacaoHistoricoResponseDTO;
 import school.sptech.projeto_amar.dto.movimentacao.perda.PerdaRequestDTO;
 import school.sptech.projeto_amar.dto.movimentacao.saida.SaidaRequestDTO;
 import school.sptech.projeto_amar.exception.movimentacaoExceptions.EstoqueInsuficienteException;
@@ -15,6 +17,7 @@ import school.sptech.projeto_amar.exception.produtoLoteExceptions.LoteNaoEncontr
 import school.sptech.projeto_amar.exception.usuarioExceptions.UsuarioNaoEncontradoException;
 import school.sptech.projeto_amar.repository.*;
 
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -104,6 +107,11 @@ public class MovimentacaoService {
         movimentacaoEstoqueRepository.save(movEstoque);
 
         return mov;
+    }
+
+    public Page<Movimentacao> listarHistoricoEntrada(Pageable pageable) {
+        Page<Movimentacao> page = repository.findByTipoOrderByDataHoraDesc(TipoMovimentacao.ENTRADA, pageable);
+        return page;
     }
 
     @Transactional

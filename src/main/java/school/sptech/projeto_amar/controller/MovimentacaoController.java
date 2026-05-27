@@ -6,11 +6,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.movimentacao.entrada.EntradaRequestDTO;
+import school.sptech.projeto_amar.dto.movimentacao.entrada.MovimentacaoHistoricoResponseDTO;
 import school.sptech.projeto_amar.dto.movimentacao.perda.PerdaRequestDTO;
 import school.sptech.projeto_amar.dto.movimentacao.saida.SaidaRequestDTO;
 import school.sptech.projeto_amar.dto.movimentacao.MovimentacaoResponseDTO;
@@ -77,6 +80,18 @@ public class MovimentacaoController {
     public ResponseEntity<Void> removerEntrada(@PathVariable Integer id) {
         service.removerEntrada(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/entrada/historico")
+    public ResponseEntity<Page<MovimentacaoHistoricoResponseDTO>> listarHistoricoEntradas(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        Page<MovimentacaoHistoricoResponseDTO> historico =
+                MovimentacaoMapping.toMovimentacaoHistorico(
+                        service.listarHistoricoEntrada(PageRequest.of(page,
+                        size)));
+        return ResponseEntity.ok(historico);
     }
 
     @PostMapping("/saida")
