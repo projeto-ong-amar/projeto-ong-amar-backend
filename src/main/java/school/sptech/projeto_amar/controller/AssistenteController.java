@@ -1,29 +1,57 @@
 package school.sptech.projeto_amar.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.dto.assistente.PerguntaRequestDTO;
+import school.sptech.projeto_amar.dto.assistente.RelatorioAssistenteDTO;
 import school.sptech.projeto_amar.service.AssistenteService;
+import school.sptech.projeto_amar.service.PdfService;
 
-@CrossOrigin(origins = "http://127.0.0.1:5500")
 @RestController
 @RequestMapping("/assistente")
 public class AssistenteController {
-    private final AssistenteService service;
 
-    public AssistenteController(AssistenteService service) {
-        this.service = service;
+    private final AssistenteService assistenteService;
+    private final PdfService pdfService;
+
+    public AssistenteController(
+            AssistenteService assistenteService,
+            PdfService pdfService
+    ) {
+        this.assistenteService = assistenteService;
+        this.pdfService = pdfService;
     }
 
     @PostMapping
-    @Operation(summary = "Enviar pergunta ao assistente", description = "Recebe uma pergunta em texto e retorna a resposta gerada pelo assistente virtual")
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "Resposta gerada com sucesso", content = @Content(mediaType = "text/plain", schema = @Schema(type = "string"))), @ApiResponse(responseCode = "400", description = "Pergunta inválida")})
-    public String chat(@RequestBody PerguntaRequestDTO body) {
-        return service.responder(body.pergunta());
+    public RelatorioAssistenteDTO chat(
+            @RequestBody PerguntaRequestDTO body
+    ) {
+        return assistenteService.responder(
+                body.pergunta()
+        );
+    }
+
+    @PostMapping("/relatorio")
+    public ResponseEntity<byte[]> gerarRelatorio(
+            @RequestBody PerguntaRequestDTO body
+    ) {
+
+        RelatorioAssistenteDTO relatorio =
+                assistenteService.responder(
+                        body.pergunta()
+                );
+
+        byte[] pdf =
+                pdfService.gerarPdf(relatorio);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=relatorio.pdf"
+                )
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 }

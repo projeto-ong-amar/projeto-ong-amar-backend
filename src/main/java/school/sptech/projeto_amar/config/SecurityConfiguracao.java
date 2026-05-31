@@ -44,6 +44,8 @@ public class SecurityConfiguracao {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/assistente",
+            "/assistente/**",
+            "/assistente/relatorio",
             "/v3/api-docs/**"
     };
 
