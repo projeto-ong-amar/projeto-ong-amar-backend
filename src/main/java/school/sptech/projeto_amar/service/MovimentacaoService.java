@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import school.sptech.projeto_amar.domain.*;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.movimentacao.entrada.EntradaRequestDTO;
-import school.sptech.projeto_amar.dto.movimentacao.entrada.MovimentacaoHistoricoResponseDTO;
 import school.sptech.projeto_amar.dto.movimentacao.perda.PerdaRequestDTO;
 import school.sptech.projeto_amar.dto.movimentacao.saida.SaidaRequestDTO;
 import school.sptech.projeto_amar.exception.movimentacaoExceptions.EstoqueInsuficienteException;
