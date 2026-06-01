@@ -25,54 +25,123 @@ public class AssistenteService {
     public RelatorioAssistenteDTO responder(String pergunta) {
 
         String resumoEstoqueMockado = """
-                Total de produtos cadastrados: 125
-                Total de itens em estoque: 1840
-
+                Total de produtos cadastrados: 186
+                Total de itens em estoque: 947
+                
+                Situação crítica identificada:
+                
                 Produtos abaixo do estoque mínimo:
-                - Feijão: 12 unidades restantes
-                - Leite: 5 unidades restantes
-                - Café: 3 unidades restantes
-
-                Produtos com maior saída nos últimos 30 dias:
+                - Arroz: 2 unidades restantes
+                - Feijão: 1 unidade restante
+                - Leite: 0 unidades disponíveis
+                - Óleo: 3 unidades restantes
+                - Café: 2 unidades restantes
+                
+                Produtos sem reposição há mais de 45 dias:
                 - Leite
-                - Pão
                 - Café
-                - Arroz
-
-                Produtos parados há mais de 60 dias:
-                - Molho de tomate premium
-                - Ervilha em conserva
-
+                - Açúcar
+                - Macarrão
+                
+                Produtos com validade próxima (menos de 7 dias):
+                - 45 unidades de pão de forma
+                - 28 unidades de iogurte
+                - 17 unidades de leite integral
+                
+                Produtos vencidos ainda armazenados:
+                - 22 unidades de leite
+                - 14 unidades de pão
+                - 8 unidades de presunto
+                
+                Perdas registradas nos últimos 30 dias:
+                - 54 unidades descartadas por vencimento
+                - 31 unidades danificadas no transporte
+                - 18 unidades extraviadas
+                
                 Produtos com excesso de estoque:
-                - Arroz: 240 unidades
-                - Macarrão: 180 unidades
-
-                Perdas registradas:
-                - 12 unidades de pão vencidas
-                - 5 unidades de leite descartadas
-                - 8 frutas danificadas no transporte
+                - Molho de tomate: 380 unidades
+                - Ervilha em conserva: 290 unidades
+                - Milho em conserva: 310 unidades
+                
+                Produtos sem movimentação há mais de 90 dias:
+                - Molho barbecue
+                - Ervilha em conserva
+                - Milho verde premium
+                
+                Maiores saídas dos últimos 30 dias:
+                - Arroz
+                - Feijão
+                - Leite
+                - Café
+                - Óleo
+                
+                Alertas operacionais:
+                - 3 movimentações de saída sem justificativa detalhada
+                - Divergência de 27 unidades entre estoque físico e sistema
+                - 2 lotes sem informação de validade
+                - 1 usuário realizou mais de 120 movimentações em um único dia
+                
+                Tendências observadas:
+                - Crescimento de 42% na demanda por alimentos básicos
+                - Aumento de perdas por vencimento nos últimos 60 dias
+                - Risco elevado de ruptura para produtos essenciais
+                - Possível falha no planejamento de compras
                 """;
 
         String prompt = """
-                Você é um analista operacional de estoque.
-
-                Responda SOMENTE em JSON válido.
-
+                Você é um analista especialista em gestão de estoque para organizações sociais.
+                
+                Analise APENAS os dados fornecidos abaixo.
+                
+                IMPORTANTE:
+                - Não faça comentários genéricos.
+                - Cite quantidades, produtos e problemas encontrados.
+                - Todas as observações devem ser baseadas nos dados informados.
+                - Se existir risco de ruptura, divergência de estoque, produtos vencidos ou excesso de estoque, isso deve aparecer na análise.
+                - As ações recomendadas devem resolver os problemas identificados.
+                - Não invente informações.
+                - Não explique sua resposta.
+                - Retorne SOMENTE JSON válido.
+                
                 Formato obrigatório:
-
+                
                 {
                   "titulo":"string",
-                  "tipo":"insight|alerta|relatorio|analise",
+                  "tipo":"insight",
                   "prioridade":"baixa|media|alta|critica",
-                  "response":["string"],
-                  "acoes_recomendadas":["string"]
+                  "response":[
+                    "string",
+                    "string",
+                    "string"
+                  ],
+                  "acoes_recomendadas":[
+                    "string",
+                    "string",
+                    "string"
+                  ]
                 }
-
-                Dados:
+                
+                Exemplo de análise esperada:
+                
+                "response": [
+                  "O leite encontra-se em situação crítica com 0 unidades disponíveis, apesar de estar entre os produtos de maior saída dos últimos 30 dias.",
+                  "Existe divergência de 27 unidades entre o estoque físico e o sistema, indicando possível falha operacional ou de controle.",
+                  "Foram registradas perdas de 54 unidades por vencimento e 31 por danos no transporte, demonstrando necessidade de melhoria na gestão dos lotes."
+                ]
+                
+                Dados do estoque:
+                
                 %s
-
-                Pergunta:
+                
+                Pergunta do usuário:
+                
                 %s
+                
+                Lembre-se:
+                - Utilize os números reais apresentados.
+                - Cite os nomes dos produtos.
+                - Gere insights objetivos e específicos.
+                - Prioridade deve ser CRÍTICA quando houver falta de produtos essenciais, produtos vencidos ou divergências relevantes de estoque.
                 """.formatted(resumoEstoqueMockado, pergunta);
 
         try {
