@@ -21,6 +21,8 @@ import school.sptech.projeto_amar.exception.produtoLoteExceptions.LoteNaoEncontr
 import school.sptech.projeto_amar.exception.usuarioExceptions.UsuarioNaoEncontradoException;
 import school.sptech.projeto_amar.repository.*;
 
+import org.springframework.data.domain.Page;
+
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +30,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -851,5 +853,90 @@ class MovimentacaoServiceTest {
             assertEquals(0, resultado);
         }
     }
-}
 
+    @Nested
+    @DisplayName("listarHistoricoEntrada()")
+    class ListarHistoricoEntrada {
+
+        @Test
+        @DisplayName("Deve retornar página com movimentações de entrada")
+        void deveRetornarPaginaComEntradas() {
+            movimentacao.setTipo(TipoMovimentacao.ENTRADA);
+            Page<Movimentacao> page = new org.springframework.data.domain.PageImpl<>(
+                    List.of(movimentacao), org.springframework.data.domain.PageRequest.of(0, 10), 1);
+            when(repository.findByTipoOrderByDataDesc(
+                    eq(TipoMovimentacao.ENTRADA), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(page);
+
+            Page<Movimentacao> resultado = service.listarHistoricoEntrada(
+                    org.springframework.data.domain.PageRequest.of(0, 10));
+
+            assertNotNull(resultado);
+            assertEquals(1, resultado.getTotalElements());
+            assertEquals(TipoMovimentacao.ENTRADA, resultado.getContent().get(0).getTipo());
+            verify(repository).findByTipoOrderByDataDesc(
+                    eq(TipoMovimentacao.ENTRADA), any(org.springframework.data.domain.Pageable.class));
+        }
+
+        @Test
+        @DisplayName("Deve retornar página vazia quando não há entradas")
+        void deveRetornarPaginaVazia() {
+            Page<Movimentacao> page = new org.springframework.data.domain.PageImpl<>(
+                    Collections.emptyList(), org.springframework.data.domain.PageRequest.of(0, 10), 0);
+            when(repository.findByTipoOrderByDataDesc(
+                    eq(TipoMovimentacao.ENTRADA), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(page);
+
+            Page<Movimentacao> resultado = service.listarHistoricoEntrada(
+                    org.springframework.data.domain.PageRequest.of(0, 10));
+
+            assertNotNull(resultado);
+            assertEquals(0, resultado.getTotalElements());
+            assertTrue(resultado.getContent().isEmpty());
+        }
+    }
+
+    @Nested
+    @DisplayName("listarHistoricoSaida()")
+    class ListarHistoricoSaida {
+
+        @Test
+        @DisplayName("Deve retornar página com movimentações de saída e perda")
+        void deveRetornarPaginaComSaidasEPerdas() {
+            movimentacao.setTipo(TipoMovimentacao.SAIDA);
+            Page<Movimentacao> page = new org.springframework.data.domain.PageImpl<>(
+                    List.of(movimentacao), org.springframework.data.domain.PageRequest.of(0, 10), 1);
+            when(repository.findByTipoInOrderByDataDesc(
+                    eq(List.of(TipoMovimentacao.SAIDA, TipoMovimentacao.PERDA)),
+                    any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(page);
+
+            Page<Movimentacao> resultado = service.listarHistoricoSaida(
+                    org.springframework.data.domain.PageRequest.of(0, 10));
+
+            assertNotNull(resultado);
+            assertEquals(1, resultado.getTotalElements());
+            verify(repository).findByTipoInOrderByDataDesc(
+                    eq(List.of(TipoMovimentacao.SAIDA, TipoMovimentacao.PERDA)),
+                    any(org.springframework.data.domain.Pageable.class));
+        }
+
+        @Test
+        @DisplayName("Deve retornar página vazia quando não há saídas nem perdas")
+        void deveRetornarPaginaVazia() {
+            Page<Movimentacao> page = new org.springframework.data.domain.PageImpl<>(
+                    Collections.emptyList(), org.springframework.data.domain.PageRequest.of(0, 10), 0);
+            when(repository.findByTipoInOrderByDataDesc(
+                    eq(List.of(TipoMovimentacao.SAIDA, TipoMovimentacao.PERDA)),
+                    any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(page);
+
+            Page<Movimentacao> resultado = service.listarHistoricoSaida(
+                    org.springframework.data.domain.PageRequest.of(0, 10));
+
+            assertNotNull(resultado);
+            assertEquals(0, resultado.getTotalElements());
+            assertTrue(resultado.getContent().isEmpty());
+        }
+    }
+}
