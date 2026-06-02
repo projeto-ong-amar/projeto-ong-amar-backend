@@ -13,6 +13,15 @@ public class Categoria {
 
     private String nome;
     private String descricao;
+    private String status;
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
     public Integer getId() {
         return id;
