@@ -1,5 +1,6 @@
 package school.sptech.projeto_amar.service;
 
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import school.sptech.projeto_amar.domain.*;
@@ -15,6 +16,7 @@ import school.sptech.projeto_amar.exception.produtoLoteExceptions.LoteNaoEncontr
 import school.sptech.projeto_amar.exception.usuarioExceptions.UsuarioNaoEncontradoException;
 import school.sptech.projeto_amar.repository.*;
 
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -104,6 +106,17 @@ public class MovimentacaoService {
         movimentacaoEstoqueRepository.save(movEstoque);
 
         return mov;
+    }
+
+    public Page<Movimentacao> listarHistoricoEntrada(Pageable pageable) {
+        Page<Movimentacao> page = repository.findByTipoOrderByDataDesc(TipoMovimentacao.ENTRADA, pageable);
+        return page;
+    }
+
+    public Page<Movimentacao> listarHistoricoSaida(Pageable pageable) {
+        Page<Movimentacao> page = repository.findByTipoInOrderByDataDesc(
+                List.of(TipoMovimentacao.SAIDA, TipoMovimentacao.PERDA), pageable);
+        return page;
     }
 
     @Transactional

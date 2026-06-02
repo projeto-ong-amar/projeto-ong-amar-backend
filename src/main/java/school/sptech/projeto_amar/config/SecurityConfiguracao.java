@@ -96,7 +96,8 @@ public class SecurityConfiguracao {
         configuracao.setAllowedOrigins(List.of(
                 "http://localhost:3000",
                 "http://localhost:5173",
-                "http://localhost:8080"
+                "http://localhost:8080",
+                "http://127.0.0.1:5500"
         ));
         configuracao.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuracao.setAllowedHeaders(List.of("*"));

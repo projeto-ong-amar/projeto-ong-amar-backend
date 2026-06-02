@@ -48,7 +48,7 @@ public class PdfService {
             }
 
             writer.setPageEvent(
-                    new school.sptech.projeto_amar.service.PdfRelatorioPageEvent(logo)
+                    new school.sptech.projeto_amar.event.PdfRelatorioPageEvent(logo)
             );
 
             document.open();

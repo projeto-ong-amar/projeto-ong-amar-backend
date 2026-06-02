@@ -70,7 +70,7 @@ public class UsuarioController {
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
             @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
     })
-    public ResponseEntity<UsuarioSessaoDTO> login(
+    public ResponseEntity<UsuarioTokenDTO> login(
             @Valid @RequestBody UsuarioLoginDTO loginDTO,
             HttpServletResponse response) {
 
@@ -86,8 +86,7 @@ public class UsuarioController {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        UsuarioSessaoDTO sessao = UsuarioMapping.toSessao(tokenDTO);
-        return ResponseEntity.ok(sessao);
+        return ResponseEntity.ok(tokenDTO);
     }
 
     @PostMapping("/logout")
