@@ -18,18 +18,8 @@ public class UsuarioMapping {
     return user;
   }
 
-  public static Usuario loginToEntity(UsuarioLoginDTO loginDTO) {
-    Usuario usuario = new Usuario();
-    usuario.setEmail(loginDTO.email());
-    usuario.setSenha(loginDTO.senha());
-    return usuario;
-  }
-
     public static UsuarioTokenDTO entityAndTokenToDTO(Usuario usuario, String token) {
       return new UsuarioTokenDTO(usuario.getId(), usuario.getNome(), usuario.getEmail(), token);
     }
 
-    public static UsuarioSessaoDTO toSessao(UsuarioTokenDTO usuarioTokenDTO) {
-      return new UsuarioSessaoDTO(usuarioTokenDTO.userId(), usuarioTokenDTO.nome(), usuarioTokenDTO.email());
-    }
 }
