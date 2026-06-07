@@ -24,7 +24,6 @@ import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-
 @RestController
 @RequestMapping("/movimentacao")
 @Tag(name = "Movimentações", description = "Endpoints para registro de movimentações de estoque")
@@ -40,10 +39,8 @@ public class MovimentacaoController {
     @Operation(summary = "Listar movimentações", description = "Lista movimentações com filtros opcionais por produto e/ou tipo")
     @ApiResponse(responseCode = "200", description = "Lista de movimentações retornada com sucesso")
     public ResponseEntity<List<MovimentacaoResponseDTO>> listar(
-            @Parameter(description = "ID do produto para filtrar")
-            @RequestParam(required = false) Integer produtoId,
-            @Parameter(description = "Tipo da movimentação (ENTRADA, SAIDA, PERDA)")
-            @RequestParam(required = false) String tipo) {
+            @Parameter(description = "ID do produto para filtrar") @RequestParam(required = false) Integer produtoId,
+            @Parameter(description = "Tipo da movimentação (ENTRADA, SAIDA, PERDA)") @RequestParam(required = false) String tipo) {
 
         if (produtoId != null && tipo != null) {
             TipoMovimentacao tipoEnum = TipoMovimentacao.valueOf(tipo.toUpperCase());
@@ -75,38 +72,50 @@ public class MovimentacaoController {
 
     @PutMapping("/entrada/{id}")
     @Operation(summary = "Atualizar entrada", description = "Atualiza uma movimentação de entrada existente")
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "Entrada atualizada com sucesso"), @ApiResponse(responseCode = "400", description = "Dados inválidos"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
-    public ResponseEntity<MovimentacaoResponseDTO> atualizarEntrada(@Valid @RequestBody EntradaRequestDTO entrada, @PathVariable Integer id) {
+    @ApiResponses({ @ApiResponse(responseCode = "200", description = "Entrada atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
+    public ResponseEntity<MovimentacaoResponseDTO> atualizarEntrada(@Valid @RequestBody EntradaRequestDTO entrada,
+            @PathVariable Integer id) {
         return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarEntrada(entrada, id)));
     }
 
     @DeleteMapping("/entrada/{id}")
     @Operation(summary = "Remover entrada", description = "Remove uma movimentação de entrada do sistema")
-    @ApiResponses({@ApiResponse(responseCode = "204", description = "Entrada removida com sucesso"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
+    @ApiResponses({ @ApiResponse(responseCode = "204", description = "Entrada removida com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
     public ResponseEntity<Void> removerEntrada(@PathVariable Integer id) {
         service.removerEntrada(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/entrada/historico")
+    @Operation(summary = "Listar histórico de entradas", description = "Retorna o histórico paginado das movimentações de entrada")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Histórico de entradas retornado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de paginação inválidos")
+    })
     public ResponseEntity<Page<MovimentacaoHistoricoResponseDTO>> listarHistoricoEntradas(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ){ 
+            @Parameter(description = "Número da página (inicia em 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Quantidade de itens por página") @RequestParam(defaultValue = "10") int size) {
         Page<MovimentacaoHistoricoResponseDTO> historico = service.listarHistoricoEntrada(PageRequest.of(page, size))
-        .map(MovimentacaoMapping::toMovimentacaoHistorico);
+                .map(MovimentacaoMapping::toMovimentacaoHistorico);
         return ResponseEntity.ok(historico);
     }
 
     @GetMapping("/saida/historico")
+    @Operation(summary = "Listar histórico de saídas", description = "Retorna o histórico paginado das movimentações de saída")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Histórico de saídas retornado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Parâmetros de paginação inválidos")
+    })
     public ResponseEntity<Page<MovimentacaoHistoricoResponseDTO>> listarHistoricoSaida(
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size) {
+            @Parameter(description = "Número da página (inicia em 0)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Quantidade de itens por página") @RequestParam(defaultValue = "10") int size) {
         Page<MovimentacaoHistoricoResponseDTO> historico = service.listarHistoricoSaida(PageRequest.of(page, size))
-        .map(MovimentacaoMapping::toMovimentacaoHistorico);
+                .map(MovimentacaoMapping::toMovimentacaoHistorico);
         return ResponseEntity.ok(historico);
     }
-    
 
     @PostMapping("/saida")
     @Operation(summary = "Registrar saída", description = "Registra uma saída de produto do estoque")
@@ -121,14 +130,18 @@ public class MovimentacaoController {
 
     @PutMapping("/saida/{id}")
     @Operation(summary = "Atualizar saída", description = "Atualiza uma movimentação de saída existente")
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "Saída atualizada com sucesso"), @ApiResponse(responseCode = "400", description = "Dados inválidos"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
-    public ResponseEntity<MovimentacaoResponseDTO> atualizarSaida(@Valid @RequestBody SaidaRequestDTO saida, @PathVariable Integer id) {
+    @ApiResponses({ @ApiResponse(responseCode = "200", description = "Saída atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
+    public ResponseEntity<MovimentacaoResponseDTO> atualizarSaida(@Valid @RequestBody SaidaRequestDTO saida,
+            @PathVariable Integer id) {
         return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarSaida(saida, id)));
     }
 
     @DeleteMapping("/saida/{id}")
     @Operation(summary = "Remover saída", description = "Remove uma movimentação de saída do sistema")
-    @ApiResponses({@ApiResponse(responseCode = "204", description = "Saída removida com sucesso"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
+    @ApiResponses({ @ApiResponse(responseCode = "204", description = "Saída removida com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
     public ResponseEntity<Void> removerSaida(@PathVariable Integer id) {
         service.removerSaida(id);
         return ResponseEntity.noContent().build();
@@ -147,14 +160,18 @@ public class MovimentacaoController {
 
     @PutMapping("/perda/{id}")
     @Operation(summary = "Atualizar perda", description = "Atualiza uma movimentação de perda existente")
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "Perda atualizada com sucesso"), @ApiResponse(responseCode = "400", description = "Dados inválidos"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
-    public ResponseEntity<MovimentacaoResponseDTO> atualizarPerda(@Valid @RequestBody PerdaRequestDTO perda, @PathVariable Integer id) {
+    @ApiResponses({ @ApiResponse(responseCode = "200", description = "Perda atualizada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
+    public ResponseEntity<MovimentacaoResponseDTO> atualizarPerda(@Valid @RequestBody PerdaRequestDTO perda,
+            @PathVariable Integer id) {
         return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarPerda(perda, id)));
     }
 
     @DeleteMapping("/perda/{id}")
     @Operation(summary = "Remover perda", description = "Remove uma movimentação de perda do sistema")
-    @ApiResponses({@ApiResponse(responseCode = "204", description = "Perda removida com sucesso"), @ApiResponse(responseCode = "404", description = "Movimentação não encontrada")})
+    @ApiResponses({ @ApiResponse(responseCode = "204", description = "Perda removida com sucesso"),
+            @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
     public ResponseEntity<Void> removerPerda(@PathVariable Integer id) {
         service.removerPerda(id);
         return ResponseEntity.noContent().build();
