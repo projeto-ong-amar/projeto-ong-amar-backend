@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 
+import java.time.LocalDate;
+
 public interface MovimentacaoRepository extends JpaRepository<Movimentacao, Integer> {
   List<Movimentacao> findByTipoAndProdutoId(TipoMovimentacao tipo, Integer produtoId);
 
@@ -36,4 +38,15 @@ public interface MovimentacaoRepository extends JpaRepository<Movimentacao, Inte
       ORDER BY SUM(m.quantidade) DESC
       """)
   List<Object[]> findTopProdutosPorTipo(@Param("tipo") TipoMovimentacao tipo, Pageable pageable);
+
+  @Query("""
+      SELECT COALESCE(SUM(CASE WHEN m.tipo = school.sptech.projeto_amar.domain.enums.TipoMovimentacao.ENTRADA
+                              THEN m.quantidade ELSE -m.quantidade END), 0)
+      FROM Movimentacao m
+      WHERE m.data BETWEEN :dataInicio AND :dataFim
+      """)
+  Integer sumSaldoByPeriodo(@Param("dataInicio") LocalDate dataInicio,
+      @Param("dataFim") LocalDate dataFim);
+
+  
 }
