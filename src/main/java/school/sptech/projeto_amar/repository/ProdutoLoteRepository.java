@@ -45,6 +45,19 @@ public interface ProdutoLoteRepository extends JpaRepository<ProdutoLote, Intege
                         @Param("dataInicio") LocalDate dataInicio,
                         @Param("dataFim") LocalDate dataFim);
 
+        @Query("""
+                        SELECT p
+                        FROM ProdutoLote p
+                        WHERE p.quantidade > 0
+                          AND p.validade IS NOT NULL
+                          AND p.validade >= :dataInicio
+                          AND p.validade <= :dataFim
+                        ORDER BY p.validade ASC
+                        """)
+        List<ProdutoLote> findAlimentosComRiscoDeVencimento(
+                        @Param("dataInicio") LocalDate dataInicio,
+                        @Param("dataFim") LocalDate dataFim);
+
         List<ProdutoLote> findByProdutoIdAndQuantidadeGreaterThanOrderByValidadeAsc(
                         Integer produtoId, Integer quantidade);
 }

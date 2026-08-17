@@ -6,10 +6,12 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import school.sptech.projeto_amar.dto.dashboard.AlimentoRiscoVencimentoResponseDTO;
 import school.sptech.projeto_amar.service.DashboardService;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/dashboard")
@@ -26,23 +28,30 @@ public class DashboardController {
 
   @GetMapping("/kpi-estoque-atual")
   public ResponseEntity<Integer> getEstoqueAtual(
-      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataProximaDoacao
-    ) {
-    
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataProximaDoacao) {
+
     LocalDate dataInicio = calcDataInicio(dataProximaDoacao);
     LocalDate dataFim = dataProximaDoacao;
 
     return ResponseEntity.ok(dashboardService.getEstoqueAtual(dataInicio, dataFim));
   }
-  
+
   @GetMapping("/kpi-risco-vencimento")
   public ResponseEntity<Integer> getAlimentosComRiscoDeVencimento(
-    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataProximaDoacao
-  ) {
-      LocalDate dataInicio = calcDataInicio(dataProximaDoacao);
-      LocalDate dataFim = dataProximaDoacao;
-      return ResponseEntity.ok(dashboardService.getAlimentosComRiscoDeVencimento(dataInicio, dataFim));
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataProximaDoacao) {
+    LocalDate dataInicio = calcDataInicio(dataProximaDoacao);
+    LocalDate dataFim = dataProximaDoacao;
+    return ResponseEntity.ok(dashboardService.getAlimentosComRiscoDeVencimento(dataInicio, dataFim));
   }
-  
+
+  @GetMapping("/modal-kpi-risco-vencimento")
+  public ResponseEntity<List<AlimentoRiscoVencimentoResponseDTO>> listarAlimentosComRiscoDeVencimento(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataProximaDoacao) {
+    LocalDate dataInicio = calcDataInicio(dataProximaDoacao);
+    LocalDate dataFim = dataProximaDoacao;
+
+    return ResponseEntity.ok(
+        dashboardService.listarAlimentosComRiscoDeVencimento(dataInicio, dataFim));
+  }
 
 }
