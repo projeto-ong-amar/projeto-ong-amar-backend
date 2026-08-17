@@ -30,6 +30,16 @@ public interface MovimentacaoRepository extends JpaRepository<Movimentacao, Inte
   @Query("SELECT COALESCE(SUM(m.quantidade), 0) FROM Movimentacao m WHERE m.tipo = :tipo")
   Integer sumQuantidadeByTipo(@Param("tipo") TipoMovimentacao tipo);
 
+    @Query("""
+            SELECT COALESCE(SUM(m.quantidade), 0)
+            FROM Movimentacao m
+            WHERE m.tipo = :tipo
+                AND m.data BETWEEN :dataInicio AND :dataFim
+            """)
+    Integer sumQuantidadeByTipoAndPeriodo(@Param("tipo") TipoMovimentacao tipo,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim);
+
   @Query("""
       SELECT m.produto.nome, COALESCE(SUM(m.quantidade), 0)
       FROM Movimentacao m

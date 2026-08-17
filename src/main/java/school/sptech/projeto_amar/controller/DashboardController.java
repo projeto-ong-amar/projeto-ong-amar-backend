@@ -54,4 +54,20 @@ public class DashboardController {
         dashboardService.listarAlimentosComRiscoDeVencimento(dataInicio, dataFim));
   }
 
+  @GetMapping("/kpi-doacoes-recebidas")
+  public ResponseEntity<Integer> getDoacoesRecebidas(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataProximaDoacao) {
+    LocalDate dataInicio = calcDataInicio(dataProximaDoacao);
+    LocalDate dataFim = dataProximaDoacao;
+    return ResponseEntity.ok(dashboardService.getDoacoesRecebidas(dataInicio, dataFim));
+  }
+
+  @GetMapping("/kpi-itens-distribuidos")
+  public ResponseEntity<Integer> getItensDistribuidos(
+      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataProximaDoacao) {
+    LocalDate dataInicio = calcDataInicio(dataProximaDoacao);
+    LocalDate dataFim = dataProximaDoacao;
+    return ResponseEntity.ok(dashboardService.getItensDistribuidos(dataInicio, dataFim));
+  }
+
 }

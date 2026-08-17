@@ -1,6 +1,7 @@
 package school.sptech.projeto_amar.service;
 
 import org.springframework.stereotype.Service;
+import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.dashboard.AlimentoRiscoVencimentoResponseDTO;
 import school.sptech.projeto_amar.mapper.ProdutoLoteMapping;
 import school.sptech.projeto_amar.repository.MovimentacaoRepository;
@@ -34,6 +35,24 @@ public class DashboardService {
     }
 
     return produtoLoteRepository.countAlimentosComRiscoDeVencimento(dataInicio, dataFim);
+  }
+
+  public Integer getDoacoesRecebidas(LocalDate dataInicio, LocalDate dataFim) {
+    validarPeriodo(dataInicio, dataFim);
+    return movimentacaoRepository.sumQuantidadeByTipoAndPeriodo(
+        TipoMovimentacao.ENTRADA, dataInicio, dataFim);
+  }
+
+  public Integer getItensDistribuidos(LocalDate dataInicio, LocalDate dataFim) {
+    validarPeriodo(dataInicio, dataFim);
+    return movimentacaoRepository.sumQuantidadeByTipoAndPeriodo(
+        TipoMovimentacao.SAIDA, dataInicio, dataFim);
+  }
+
+  private void validarPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+    if (dataInicio.isAfter(dataFim)) {
+      throw new IllegalArgumentException("A data inicial deve ser anterior ou igual à data final");
+    }
   }
 
   public List<AlimentoRiscoVencimentoResponseDTO> listarAlimentosComRiscoDeVencimento(
