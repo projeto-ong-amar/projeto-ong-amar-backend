@@ -30,15 +30,29 @@ public interface MovimentacaoRepository extends JpaRepository<Movimentacao, Inte
   @Query("SELECT COALESCE(SUM(m.quantidade), 0) FROM Movimentacao m WHERE m.tipo = :tipo")
   Integer sumQuantidadeByTipo(@Param("tipo") TipoMovimentacao tipo);
 
-    @Query("""
-            SELECT COALESCE(SUM(m.quantidade), 0)
-            FROM Movimentacao m
-            WHERE m.tipo = :tipo
-                AND m.data BETWEEN :dataInicio AND :dataFim
-            """)
-    Integer sumQuantidadeByTipoAndPeriodo(@Param("tipo") TipoMovimentacao tipo,
-            @Param("dataInicio") LocalDate dataInicio,
-            @Param("dataFim") LocalDate dataFim);
+  @Query("""
+      SELECT COALESCE(SUM(m.quantidade), 0)
+      FROM Movimentacao m
+      WHERE m.tipo = :tipo
+          AND m.data BETWEEN :dataInicio AND :dataFim
+      """)
+  Integer sumQuantidadeByTipoAndPeriodo(@Param("tipo") TipoMovimentacao tipo,
+      @Param("dataInicio") LocalDate dataInicio,
+      @Param("dataFim") LocalDate dataFim);
+
+  @Query("""
+      SELECT FUNCTION('YEAR', m.data), FUNCTION('MONTH', m.data),
+             COALESCE(SUM(CASE WHEN m.tipo = school.sptech.projeto_amar.domain.enums.TipoMovimentacao.ENTRADA
+                               THEN m.quantidade ELSE 0 END), 0),
+             COALESCE(SUM(CASE WHEN m.tipo = school.sptech.projeto_amar.domain.enums.TipoMovimentacao.SAIDA
+                               THEN m.quantidade ELSE 0 END), 0)
+      FROM Movimentacao m
+      WHERE m.data BETWEEN :dataInicio AND :dataFim
+      GROUP BY FUNCTION('YEAR', m.data), FUNCTION('MONTH', m.data)
+      ORDER BY FUNCTION('YEAR', m.data), FUNCTION('MONTH', m.data)
+      """)
+  List<Object[]> sumMovimentacoesPorMes(@Param("dataInicio") LocalDate dataInicio,
+      @Param("dataFim") LocalDate dataFim);
 
   @Query("""
       SELECT m.produto.nome, COALESCE(SUM(m.quantidade), 0)
@@ -58,5 +72,4 @@ public interface MovimentacaoRepository extends JpaRepository<Movimentacao, Inte
   Integer sumSaldoByPeriodo(@Param("dataInicio") LocalDate dataInicio,
       @Param("dataFim") LocalDate dataFim);
 
-  
 }

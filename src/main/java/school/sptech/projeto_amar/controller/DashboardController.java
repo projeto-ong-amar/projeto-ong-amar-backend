@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import school.sptech.projeto_amar.dto.dashboard.AlimentoRiscoVencimentoResponseDTO;
+import school.sptech.projeto_amar.dto.dashboard.MovimentacaoMensalResponseDTO;
 import school.sptech.projeto_amar.service.DashboardService;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -68,6 +69,11 @@ public class DashboardController {
     LocalDate dataInicio = calcDataInicio(dataProximaDoacao);
     LocalDate dataFim = dataProximaDoacao;
     return ResponseEntity.ok(dashboardService.getItensDistribuidos(dataInicio, dataFim));
+  }
+
+  @GetMapping("/movimentacoes-por-mes")
+  public ResponseEntity<List<MovimentacaoMensalResponseDTO>> listarMovimentacoesPorMes() {
+    return ResponseEntity.ok(dashboardService.listarMovimentacoesPorMes());
   }
 
 }
