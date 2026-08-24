@@ -31,138 +31,147 @@ import java.util.List;
 @Tag(name = "Usuários", description = "Endpoints para gerenciamento de usuários")
 public class UsuarioController {
 
-    private UsuarioService service;
+        private UsuarioService service;
 
-    @Value("${jwt.validity}")
-    private Long jwtValidity;
+        @Value("${jwt.validity}")
+        private Long jwtValidity;
 
-    public static final String COOKIE_NOME = "authToken";
+        public static final String COOKIE_NOME = "authToken";
 
-    public UsuarioController(UsuarioService service) {
-        this.service = service;
-    }
-
-    @PostMapping("/cadastrar")
-    @Operation(summary = "Cadastrar usuário", description = "Cria um novo usuário no sistema. Requer perfil ADMINISTRADOR")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Usuário cadastrado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-            @ApiResponse(responseCode = "403", description = "Acesso negado")
-    })
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO u) {
-        Usuario cadastrado = service.cadastrar(UsuarioMapping.toDomain(u));
-        return ResponseEntity.status(201).body(UsuarioMapping.toResponse(cadastrado));
-    }
-
-    @PostMapping("/login")
-    @Operation(summary = "Login", description = "Autentica o usuário e retorna um token via cookie HttpOnly")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Login realizado com sucesso",
-                    headers = @Header(
-                            name = "Set-Cookie",
-                            description = "authToken (HttpOnly, SameSite=Strict)",
-                            schema = @Schema(type = "string", example = "authToken=eyJhbGc...; Path=/; HttpOnly; SameSite=Strict")
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-            @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
-    })
-    public ResponseEntity<UsuarioTokenDTO> login(
-            @Valid @RequestBody UsuarioLoginDTO loginDTO,
-            HttpServletResponse response) {
-
-        UsuarioTokenDTO tokenDTO = service.login(loginDTO.email(), loginDTO.senha());
-
-        ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, tokenDTO.token())
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(Duration.ofSeconds(jwtValidity))
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-
-        return ResponseEntity.ok(tokenDTO);
-    }
-
-    @PostMapping("/logout")
-    @Operation(summary = "Logout", description = "Remove o cookie de autenticação do cliente")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Logout realizado com sucesso"),
-            @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
-    })
-    public ResponseEntity<Void> logout(HttpServletResponse response) {
-
-        ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, "")
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(0)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping
-    @Operation(summary = "Listar usuários", description = "Lista todos os usuários ou filtra por tipo. Requer perfil ADMINISTRADOR")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
-            @ApiResponse(responseCode = "403", description = "Acesso negado")
-    })
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<List<UsuarioResponseDTO>> listarTodos(
-            @Parameter(description = "Tipo do usuário (ADMINISTRADOR ou VOLUNTARIO)")
-            @RequestParam(required = false) String tipoUsuario) {
-
-        List<UsuarioResponseDTO> usuarios;
-
-        if (tipoUsuario != null) {
-            usuarios = service.listarPorTipo(tipoUsuario.toUpperCase())
-                    .stream().map(UsuarioMapping::toResponse).toList();
-        } else {
-            usuarios = service.listarTodos()
-                    .stream().map(UsuarioMapping::toResponse).toList();
+        public UsuarioController(UsuarioService service) {
+                this.service = service;
         }
 
-        return ResponseEntity.ok(usuarios);
-    }
+        @PostMapping("/cadastrar")
+        @Operation(summary = "Cadastrar usuário", description = "Cria um novo usuário no sistema. Requer perfil ADMINISTRADOR")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "201", description = "Usuário cadastrado com sucesso"),
+                        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+                        @ApiResponse(responseCode = "403", description = "Acesso negado")
+        })
+        @PreAuthorize("hasRole('ADMINISTRADOR')")
+        public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO u) {
+                Usuario cadastrado = service.cadastrar(UsuarioMapping.toDomain(u));
+                return ResponseEntity.status(201).body(UsuarioMapping.toResponse(cadastrado));
+        }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Atualizar usuário", description = "Atualiza os dados de um usuário pelo ID. Requer perfil ADMINISTRADOR")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Usuário atualizado com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-            @ApiResponse(responseCode = "403", description = "Acesso negado"),
-            @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
-    })
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<UsuarioResponseDTO> atualizar(
-            @Valid @RequestBody UsuarioRequestDTO u,
-            @Parameter(description = "ID do usuário") @PathVariable Integer id) {
+        @PostMapping("/login")
+        @Operation(summary = "Login", description = "Autentica o usuário e retorna um token via cookie HttpOnly")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Login realizado com sucesso", headers = @Header(name = "Set-Cookie", description = "authToken (HttpOnly, SameSite=Strict)", schema = @Schema(type = "string", example = "authToken=eyJhbGc...; Path=/; HttpOnly; SameSite=Strict"))),
+                        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+                        @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
+        })
+        public ResponseEntity<UsuarioTokenDTO> login(
+                        @Valid @RequestBody UsuarioLoginDTO loginDTO,
+                        HttpServletResponse response) {
 
-        Usuario atualizado = service.atualizar(id, UsuarioMapping.toDomain(u));
-        return ResponseEntity.ok(UsuarioMapping.toResponse(atualizado));
-    }
+                UsuarioTokenDTO tokenDTO = service.login(loginDTO.email(), loginDTO.senha());
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Remover usuário", description = "Remove um usuário pelo ID. Requer perfil ADMINISTRADOR")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Usuário removido com sucesso"),
-            @ApiResponse(responseCode = "403", description = "Acesso negado"),
-            @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
-    })
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<Void> removerPorId(
-            @Parameter(description = "ID do usuário") @PathVariable Integer id) {
+                ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, tokenDTO.token())
+                                .httpOnly(true)
+                                .secure(false)
+                                .sameSite("Strict")
+                                .path("/")
+                                .maxAge(Duration.ofSeconds(jwtValidity))
+                                .build();
 
-        service.remover(id);
-        return ResponseEntity.noContent().build();
-    }
+                response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+                return ResponseEntity.ok(tokenDTO);
+        }
+
+        @PostMapping("/recuperacao-senha")
+        public ResponseEntity<Void> solicitarRecuperacaoSenha(
+                        @Valid @RequestBody RecuperacaoSenhaRequestDTO requestDTO) {
+                service.solicitarRecuperacaoSenha(requestDTO.email());
+                return ResponseEntity.noContent().build();
+        }
+
+        @PostMapping("/redefinir-senha")
+        public ResponseEntity<Void> redefinirSenha(
+                        @Valid @RequestBody RedefinicaoSenhaRequestDTO requestDTO) {
+                try {
+                        service.redefinirSenha(requestDTO.token(), requestDTO.novaSenha());
+                        return ResponseEntity.noContent().build();
+                } catch (IllegalArgumentException exception) {
+                        return ResponseEntity.badRequest().build();
+                }
+        }
+
+        @PostMapping("/logout")
+        @Operation(summary = "Logout", description = "Remove o cookie de autenticação do cliente")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "Logout realizado com sucesso"),
+                        @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
+        })
+        public ResponseEntity<Void> logout(HttpServletResponse response) {
+
+                ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, "")
+                                .httpOnly(true)
+                                .secure(false)
+                                .sameSite("Strict")
+                                .path("/")
+                                .maxAge(0)
+                                .build();
+
+                response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+                return ResponseEntity.noContent().build();
+        }
+
+        @GetMapping
+        @Operation(summary = "Listar usuários", description = "Lista todos os usuários ou filtra por tipo. Requer perfil ADMINISTRADOR")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
+                        @ApiResponse(responseCode = "403", description = "Acesso negado")
+        })
+        @PreAuthorize("hasRole('ADMINISTRADOR')")
+        public ResponseEntity<List<UsuarioResponseDTO>> listarTodos(
+                        @Parameter(description = "Tipo do usuário (ADMINISTRADOR ou VOLUNTARIO)") @RequestParam(required = false) String tipoUsuario) {
+
+                List<UsuarioResponseDTO> usuarios;
+
+                if (tipoUsuario != null) {
+                        usuarios = service.listarPorTipo(tipoUsuario.toUpperCase())
+                                        .stream().map(UsuarioMapping::toResponse).toList();
+                } else {
+                        usuarios = service.listarTodos()
+                                        .stream().map(UsuarioMapping::toResponse).toList();
+                }
+
+                return ResponseEntity.ok(usuarios);
+        }
+
+        @PutMapping("/{id}")
+        @Operation(summary = "Atualizar usuário", description = "Atualiza os dados de um usuário pelo ID. Requer perfil ADMINISTRADOR")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Usuário atualizado com sucesso"),
+                        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+                        @ApiResponse(responseCode = "403", description = "Acesso negado"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
+        @PreAuthorize("hasRole('ADMINISTRADOR')")
+        public ResponseEntity<UsuarioResponseDTO> atualizar(
+                        @Valid @RequestBody UsuarioRequestDTO u,
+                        @Parameter(description = "ID do usuário") @PathVariable Integer id) {
+
+                Usuario atualizado = service.atualizar(id, UsuarioMapping.toDomain(u));
+                return ResponseEntity.ok(UsuarioMapping.toResponse(atualizado));
+        }
+
+        @DeleteMapping("/{id}")
+        @Operation(summary = "Remover usuário", description = "Remove um usuário pelo ID. Requer perfil ADMINISTRADOR")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "Usuário removido com sucesso"),
+                        @ApiResponse(responseCode = "403", description = "Acesso negado"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
+        @PreAuthorize("hasRole('ADMINISTRADOR')")
+        public ResponseEntity<Void> removerPorId(
+                        @Parameter(description = "ID do usuário") @PathVariable Integer id) {
+
+                service.remover(id);
+                return ResponseEntity.noContent().build();
+        }
 }

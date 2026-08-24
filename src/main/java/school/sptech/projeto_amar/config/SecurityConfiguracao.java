@@ -37,8 +37,10 @@ public class SecurityConfiguracao {
     }
 
     private static final String[] URLS_PERMITIDAS = {
-        "/usuarios/login",
+            "/usuarios/login",
             "/usuarios/logout",
+            "/usuarios/recuperacao-senha",
+            "/usuarios/redefinir-senha",
             "/error",
             "/swagger-ui",
             "/swagger-ui/**",
@@ -61,30 +63,27 @@ public class SecurityConfiguracao {
 
     @Bean
     public AuthenticationManager authenticationManager(AutenticacaoService autenticacaoService,
-                                                       PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder) {
         AutenticacaoProvider provider = new AutenticacaoProvider(autenticacaoService, passwordEncoder);
         return new ProviderManager(provider);
     }
 
     @Bean
     public AutenticacaoFilter autenticacaoFilter(GerenciadorTokenJwt gerenciadorTokenJwt,
-                                                 AutenticacaoService autenticacaoService) {
+            AutenticacaoService autenticacaoService) {
         return new AutenticacaoFilter(gerenciadorTokenJwt, autenticacaoService);
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   AutenticacaoFilter autenticacaoFilter, CorsConfigurationSource corsConfigurationSource) throws Exception {
+            AutenticacaoFilter autenticacaoFilter, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth ->
-                        auth.requestMatchers(URLS_PERMITIDAS).permitAll()
-                                .requestMatchers(HttpMethod.POST, "/usuarios/cadastrar").permitAll()
-                                .anyRequest().authenticated())
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint(autenticacaoEntryPoint))
+                .authorizeHttpRequests(auth -> auth.requestMatchers(URLS_PERMITIDAS).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/usuarios/cadastrar").permitAll()
+                        .anyRequest().authenticated())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(autenticacaoEntryPoint))
                 .addFilterBefore(autenticacaoFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
@@ -97,8 +96,7 @@ public class SecurityConfiguracao {
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://localhost:8080",
-                "http://127.0.0.1:5500"
-        ));
+                "http://127.0.0.1:5500"));
         configuracao.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuracao.setAllowedHeaders(List.of("*"));
         configuracao.setAllowCredentials(true);

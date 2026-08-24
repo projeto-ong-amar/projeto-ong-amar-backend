@@ -14,12 +14,17 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import school.sptech.projeto_amar.config.GerenciadorTokenJwt;
+import school.sptech.projeto_amar.domain.TokenRecuperacaoSenha;
 import school.sptech.projeto_amar.domain.Usuario;
 import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 import school.sptech.projeto_amar.dto.usuario.UsuarioTokenDTO;
 import school.sptech.projeto_amar.exception.usuarioExceptions.*;
+import school.sptech.projeto_amar.repository.TokenRecuperacaoSenhaRepository;
 import school.sptech.projeto_amar.repository.UsuarioRepository;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +51,12 @@ class UsuarioServiceTest {
 
     @Mock
     private AuthenticationManager authenticationManager;
+
+    @Mock
+    private TokenRecuperacaoSenhaRepository tokenRecuperacaoSenhaRepository;
+
+    @Mock
+    private EmailService emailService;
 
     private Usuario usuario;
 
@@ -128,6 +139,76 @@ class UsuarioServiceTest {
 
             assertThrows(UsuarioNaoEncontradoException.class,
                     () -> service.login("joao@email.com", "Senha@123"));
+        }
+    }
+
+    @Nested
+    @DisplayName("recuperação de senha")
+    class RecuperacaoSenha {
+
+        @Test
+        @DisplayName("Deve gerar token de uso único e enviar e-mail para usuário ativo")
+        void deveSolicitarRecuperacaoParaUsuarioAtivo() {
+            when(repository.findByEmail("joao@email.com")).thenReturn(Optional.of(usuario));
+
+            UsuarioService serviceComUrl = criarServiceComUrl();
+            serviceComUrl.solicitarRecuperacaoSenha("joao@email.com");
+
+            var tokenCaptor = org.mockito.ArgumentCaptor.forClass(TokenRecuperacaoSenha.class);
+            var linkCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+            verify(tokenRecuperacaoSenhaRepository).deleteByUsuarioId(1);
+            verify(tokenRecuperacaoSenhaRepository).save(tokenCaptor.capture());
+            verify(emailService).enviarRecuperacaoSenha(
+                    eq("joao@email.com"), eq("João Silva"), linkCaptor.capture());
+
+            TokenRecuperacaoSenha token = tokenCaptor.getValue();
+            assertEquals(usuario, token.getUsuario());
+            assertFalse(token.isUtilizado());
+            assertEquals(64, token.getTokenHash().length());
+            assertTrue(token.getExpiraEm().isAfter(LocalDateTime.now().plusMinutes(14)));
+            assertTrue(linkCaptor.getValue().startsWith("http://localhost:5173/redefinir-senha?token="));
+        }
+
+        @Test
+        @DisplayName("Não deve enviar e-mail para endereço sem conta")
+        void naoDeveRevelarEmailInexistente() {
+            when(repository.findByEmail("ausente@email.com")).thenReturn(Optional.empty());
+
+            criarServiceComUrl().solicitarRecuperacaoSenha("ausente@email.com");
+
+            verifyNoInteractions(tokenRecuperacaoSenhaRepository, emailService);
+        }
+
+        @Test
+        @DisplayName("Deve alterar senha e invalidar token válido")
+        void deveRedefinirSenhaComTokenValido() throws Exception {
+            String tokenPuro = "token-para-teste";
+            TokenRecuperacaoSenha token = new TokenRecuperacaoSenha();
+            token.setUsuario(usuario);
+            token.setTokenHash(gerarHash(tokenPuro));
+            token.setExpiraEm(LocalDateTime.now().plusMinutes(15));
+            token.setUtilizado(false);
+            when(tokenRecuperacaoSenhaRepository.findByTokenHashAndExpiraEmAfterAndUtilizadoFalse(
+                    eq(gerarHash(tokenPuro)), any(LocalDateTime.class))).thenReturn(Optional.of(token));
+            when(passwordEncoder.encode("NovaSenha@1")).thenReturn("novaSenhaHash");
+
+            criarServiceComUrl().redefinirSenha(tokenPuro, "NovaSenha@1");
+
+            assertEquals("novaSenhaHash", usuario.getSenha());
+            assertTrue(token.isUtilizado());
+            verify(repository).save(usuario);
+            verify(tokenRecuperacaoSenhaRepository).save(token);
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar token inexistente ou expirado")
+        void deveRejeitarTokenInvalido() {
+            when(tokenRecuperacaoSenhaRepository.findByTokenHashAndExpiraEmAfterAndUtilizadoFalse(
+                    anyString(), any(LocalDateTime.class))).thenReturn(Optional.empty());
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> criarServiceComUrl().redefinirSenha("token-invalido", "NovaSenha@1"));
+            verify(repository, never()).save(any());
         }
     }
 
@@ -286,5 +367,15 @@ class UsuarioServiceTest {
             verify(repository).save(argThat(u -> "INATIVO".equals(u.getStatus())));
         }
     }
-}
 
+    private UsuarioService criarServiceComUrl() {
+        return new UsuarioService(repository, passwordEncoder, gerenciadorTokenJwt,
+                authenticationManager, tokenRecuperacaoSenhaRepository, emailService,
+                "http://localhost:5173/redefinir-senha");
+    }
+
+    private String gerarHash(String valor) throws Exception {
+        return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                .digest(valor.getBytes(StandardCharsets.UTF_8)));
+    }
+}
