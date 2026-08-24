@@ -5,6 +5,131 @@ All notable changes to this project will be documented in this file.
 Format: [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 
 
+## [0.3.0](2026-08-17)
+
+### Swagger
+
+#### Documentation
+
+- adiciona documentação do CategoriaController
+- adiciona documentação do MovimentacaoController
+
+
+### Release
+
+#### Chores
+
+- v0.2.0
+
+
+### README
+
+#### Documentation
+
+- adds README.md
+
+
+### General
+
+#### Features
+
+- configs application.properties
+- pom atualizado com configuracoes do jacoco
+- testes faltantes das services
+- geração de relatórios com Gemini
+- melhora análise da IA e moderniza layout do PDF gerado
+- implementa geração de relatórios pdf
+- permitindo que a url do front no liveserver se conecte
+- add jacoco no pom.xml
+- endpoint de historico de saidas/perda
+- endpoint de historico de entradas finalizado
+- inicio do endpoint de historico
+- assistente IA com contexto de estoque e respostas estruturadas
+- endpoints restantes de movimentacao
+- endpoints de categoria
+- integração do assistente ao backend
+- pesquisa de produtos por categoria
+- verificação de exclusão do admin
+
+#### Bug Fixes
+
+- removendo testes desnecessarios e retirando imports
+- ajustando declaração de package
+- retornando token para o front no login
+- removendo import desnecessario
+- limite de tokens de resposta do assistente
+- endpoint do assistente autorizado no SecurityConfiguracao
+- soft delete nos produtos
+- tamanho minimo da senha
+- regex de senha
+- permitir rota /swagger-ui/** no security
+
+#### Refactoring
+
+- criação de método genérico para geração de relatório
+
+#### Documentation
+
+- adiciona documentação do OllamaResponseDTO
+- adiciona documentação do PerguntaRequestDTO
+- adiciona documentação do RelatorioAssistenteDTO
+- adiciona documentação do AssistenteController
+- atualiza swagger no MovimentaçãoController e DTOs de movimentação
+- atualiza swagger no ProdutoController e DTOs de produto
+- atualiza swagger no CategoriaController e DTOs de categoria
+
+
+### Contributors
+
+Thank you to 2 community contributors:
+
+@Breno
+- feat: verificação de exclusão do admin
+- feat: pesquisa de produtos por categoria
+- fix: tamanho minimo da senha
+- fix: regex de senha
+- fix: soft delete nos produtos
+- feat: endpoints de categoria
+- feat: integração do assistente ao backend
+- feat: endpoints restantes de movimentacao
+- feat: endpoint de historico de saidas/perda
+- feat: endpoint de historico de entradas finalizado
+- feat: inicio do endpoint de historico
+- fix: retornando token para o front no login
+- feat: permitindo que a url do front no liveserver se conecte
+- fix: removendo import desnecessario
+- feat: add jacoco no pom.xml
+- fix: removendo testes desnecessarios e retirando imports
+- fix: ajustando declaração de package
+- feat: configs application.properties
+- feat: pom atualizado com configuracoes do jacoco
+- feat: testes faltantes das services
+- feat: geração de relatórios com Gemini
+
+@Beno-Goulart
+- docs: atualiza swagger no MovimentaçãoController e DTOs de movimentação
+- docs: atualiza swagger no ProdutoController e DTOs de produto
+- docs: atualiza swagger no CategoriaController e DTOs de categoria
+- update: Usuarios Controller e DTOs
+- fix: permitir rota /swagger-ui/** no security
+- update: atualiza estrutura do endpoint movimentações
+- feat: assistente IA com contexto de estoque e respostas estruturadas
+- docs: adiciona documentação do AssistenteController
+- docs(swagger): adiciona documentação do CategoriaController
+- docs(swagger): adiciona documentação do MovimentacaoController
+- fix: limite de tokens de resposta do assistente
+- fix: endpoint do assistente autorizado no SecurityConfiguracao
+- docs: adiciona documentação do OllamaResponseDTO
+- docs: adiciona documentação do PerguntaRequestDTO
+- docs: adiciona documentação do RelatorioAssistenteDTO
+- feat: melhora análise da IA e moderniza layout do PDF gerado
+- feat: implementa geração de relatórios pdf
+- refactor: criação de método genérico para geração de relatório
+- chore(release): v0.2.0
+- docs(README): adds README.md
+
+**Contributors:** @Breno, @Beno-Goulart
+
 ## [0.2.0](2026-08-17)
 
 ### Swagger

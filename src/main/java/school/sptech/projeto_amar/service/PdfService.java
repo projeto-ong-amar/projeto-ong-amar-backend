@@ -8,6 +8,7 @@ import com.lowagie.text.pdf.*;
 import com.lowagie.text.pdf.draw.LineSeparator;
 import org.springframework.stereotype.Service;
 import school.sptech.projeto_amar.dto.assistente.RelatorioAssistenteDTO;
+import school.sptech.projeto_amar.dto.assistente.TabelaRelatorioDTO;
 
 import java.awt.*;
 import java.io.ByteArrayOutputStream;
@@ -31,6 +32,9 @@ public class PdfService {
         private static final Font TEXTO = new Font(Font.HELVETICA, 10, Font.NORMAL, COR_TEXTO);
         private static final Font TEXTO_DESTAQUE = new Font(Font.HELVETICA, 10, Font.BOLD, COR_PRIMARIA);
         private static final Font TEXTO_SMALL = new Font(Font.HELVETICA, 9, Font.NORMAL, COR_MUTED);
+        private static final Font TITULO_TABELA = new Font(Font.HELVETICA, 10, Font.BOLD, COR_PRIMARIA);
+        private static final Font CABECALHO_TABELA = new Font(Font.HELVETICA, 9, Font.BOLD, Color.WHITE);
+        private static final Font CELULA_TABELA = new Font(Font.HELVETICA, 9, Font.NORMAL, COR_TEXTO);
 
         public byte[] gerarPdf(RelatorioAssistenteDTO relatorio) {
 
@@ -67,6 +71,8 @@ public class PdfService {
                         adicionarParagrafoComCaixa(
                                         document,
                                         valorPadrao(relatorio.titulo(), "Relatório sem resumo disponível."));
+
+                        adicionarTabelasConteudo(document, relatorio.tabelas());
 
                         adicionarSecaoTitulo(document, modoContingencia ? "Análise Operacional" : "Análise da IA");
                         adicionarLista(
@@ -197,6 +203,82 @@ public class PdfService {
                 box.addCell(cell);
 
                 document.add(box);
+        }
+
+        private void adicionarTabelasConteudo(Document document, List<TabelaRelatorioDTO> tabelas)
+                        throws DocumentException {
+                if (tabelas == null || tabelas.isEmpty()) {
+                        return;
+                }
+
+                List<TabelaRelatorioDTO> tabelasRenderizaveis = tabelas.stream()
+                                .filter(this::isTabelaRenderizavel)
+                                .toList();
+
+                if (tabelasRenderizaveis.isEmpty()) {
+                        return;
+                }
+
+                document.add(new Paragraph(" "));
+                adicionarSecaoTitulo(document, "Indicadores em Destaque");
+
+                for (TabelaRelatorioDTO tabela : tabelasRenderizaveis) {
+                        adicionarTabelaUnica(document, tabela);
+                }
+        }
+
+        private void adicionarTabelaUnica(Document document, TabelaRelatorioDTO tabela) throws DocumentException {
+                Paragraph titulo = new Paragraph(tabela.titulo(), TITULO_TABELA);
+                titulo.setSpacingBefore(6f);
+                titulo.setSpacingAfter(5f);
+                document.add(titulo);
+
+                int totalColunas = tabela.colunas().size();
+                PdfPTable pdfTable = new PdfPTable(totalColunas);
+                pdfTable.setWidthPercentage(100);
+                pdfTable.setHeaderRows(1);
+                pdfTable.setSpacingAfter(12f);
+
+                for (String coluna : tabela.colunas()) {
+                        PdfPCell celulaCabecalho = new PdfPCell(new Phrase(abreviarTexto(coluna, 40), CABECALHO_TABELA));
+                        celulaCabecalho.setBackgroundColor(COR_PRIMARIA);
+                        celulaCabecalho.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        celulaCabecalho.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                        celulaCabecalho.setPadding(7f);
+                        celulaCabecalho.setBorderColor(COR_PRIMARIA);
+                        pdfTable.addCell(celulaCabecalho);
+                }
+
+                boolean fundoAlternado = false;
+                for (List<String> linha : tabela.linhas()) {
+                        Color fundo = fundoAlternado ? COR_CARD : Color.WHITE;
+                        fundoAlternado = !fundoAlternado;
+
+                        for (int i = 0; i < totalColunas; i++) {
+                                String valor = i < linha.size() && linha.get(i) != null ? linha.get(i) : "";
+                                PdfPCell celula = new PdfPCell(new Phrase(abreviarTexto(valor, 120), CELULA_TABELA));
+                                celula.setBackgroundColor(fundo);
+                                celula.setPadding(5f);
+                                celula.setBorderColor(new Color(222, 229, 238));
+                                pdfTable.addCell(celula);
+                        }
+                }
+
+                document.add(pdfTable);
+        }
+
+        private boolean isTabelaRenderizavel(TabelaRelatorioDTO tabela) {
+                return tabela != null
+                                && tabela.colunas() != null
+                                && !tabela.colunas().isEmpty()
+                                && tabela.linhas() != null
+                                && !tabela.linhas().isEmpty();
+        }
+
+        private String abreviarTexto(String texto, int tamanhoMaximo) {
+                String limpo = texto == null ? "" : texto.trim();
+                return limpo.length() <= tamanhoMaximo ? limpo
+                                : limpo.substring(0, tamanhoMaximo - 3) + "...";
         }
 
         private void adicionarLista(
