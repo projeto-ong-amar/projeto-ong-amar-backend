@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import school.sptech.projeto_amar.dto.dashboard.AlimentoRiscoVencimentoResponseDTO;
+import school.sptech.projeto_amar.dto.dashboard.EstoquePorTipoResponseDTO;
+import school.sptech.projeto_amar.dto.dashboard.EstoqueFechamentoMensalResponseDTO;
 import school.sptech.projeto_amar.dto.dashboard.MovimentacaoMensalResponseDTO;
 import school.sptech.projeto_amar.service.DashboardService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -74,6 +76,16 @@ public class DashboardController {
   @GetMapping("/movimentacoes-por-mes")
   public ResponseEntity<List<MovimentacaoMensalResponseDTO>> listarMovimentacoesPorMes() {
     return ResponseEntity.ok(dashboardService.listarMovimentacoesPorMes());
+  }
+
+  @GetMapping("/estoque-por-tipo")
+  public ResponseEntity<List<EstoquePorTipoResponseDTO>> listarEstoquePorTipo() {
+    return ResponseEntity.ok(dashboardService.listarEstoquePorTipo());
+  }
+
+  @GetMapping("/estoque-fechamento-por-mes")
+  public ResponseEntity<List<EstoqueFechamentoMensalResponseDTO>> listarEstoqueFechamentoPorMes() {
+    return ResponseEntity.ok(dashboardService.listarEstoqueFechamentoPorMes());
   }
 
 }
