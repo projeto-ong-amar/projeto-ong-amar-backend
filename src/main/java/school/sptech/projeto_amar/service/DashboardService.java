@@ -53,24 +53,24 @@ public class DashboardService {
         TipoMovimentacao.SAIDA, dataInicio, dataFim);
   }
 
-    public List<MovimentacaoMensalResponseDTO> listarMovimentacoesPorMes() {
+  public List<MovimentacaoMensalResponseDTO> listarMovimentacoesPorMes() {
     LocalDate hoje = LocalDate.now();
     LocalDate dataInicio = LocalDate.of(hoje.getYear(), 1, 1);
 
     Map<Integer, MovimentacaoMensalResponseDTO> movimentacoesPorMes = movimentacaoRepository
-      .sumMovimentacoesPorMes(dataInicio, hoje)
+        .sumMovimentacoesPorMes(dataInicio, hoje)
         .stream()
         .map(movimentacao -> new MovimentacaoMensalResponseDTO(
             ((Number) movimentacao[0]).intValue(),
             ((Number) movimentacao[1]).intValue(),
             ((Number) movimentacao[2]).longValue(),
             ((Number) movimentacao[3]).longValue()))
-      .collect(Collectors.toMap(movimentacao -> movimentacao.mes(), movimentacao -> movimentacao));
+        .collect(Collectors.toMap(movimentacao -> movimentacao.mes(), movimentacao -> movimentacao));
 
     return IntStream.rangeClosed(1, hoje.getMonthValue())
-      .mapToObj(mes -> movimentacoesPorMes.getOrDefault(mes,
-        new MovimentacaoMensalResponseDTO(hoje.getYear(), mes, 0L, 0L)))
-      .toList();
+        .mapToObj(mes -> movimentacoesPorMes.getOrDefault(mes,
+            new MovimentacaoMensalResponseDTO(hoje.getYear(), mes, 0L, 0L)))
+        .toList();
   }
 
   private void validarPeriodo(LocalDate dataInicio, LocalDate dataFim) {
