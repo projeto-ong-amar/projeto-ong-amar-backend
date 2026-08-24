@@ -61,7 +61,7 @@ cp .env.example .env      # preencha as variaveis de ambiente
 | `JWT_VALIDITY` | Nao | Validade do token em segundos (padrao: 86400 = 24h) |
 | `SECURITY_PEPPER` | Sim | Pepper secreto para hash de senhas |
 | `GEMINI_API_KEY` | Nao | Chave de API do Google Gemini |
-| `GEMINI_MODEL` | Nao | Modelo de IA (padrao: `gemini-2.5-flash`) |
+| `GEMINI_MODEL` | Nao | Modelo de IA (padrao: `gemini-3.6-flash`) |
 
 ### Executar
 
@@ -206,7 +206,7 @@ Quando a IA responde corretamente, a resposta e validada multi-camada antes de s
 | Banco de Dados | MySQL 8 (producao) / H2 (testes) |
 | Seguranca | Spring Security + JWT (jjwt 0.12.5) |
 | Senhas | Argon2 + HMAC-SHA256 pepper |
-| IA | Spring AI 2.0 + Google Gemini (`gemini-2.5-flash`) |
+| IA | Spring AI 2.0 + Google Gemini (`gemini-3.6-flash`) |
 | PDF | OpenPDF (LibrePDF) 1.3.39 |
 | Documentacao | SpringDoc OpenAPI 2.5.0 |
 | Testes | JUnit 5 + Mockito |

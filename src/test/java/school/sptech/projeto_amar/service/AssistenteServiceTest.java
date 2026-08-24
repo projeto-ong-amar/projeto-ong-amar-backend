@@ -4,7 +4,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -18,6 +17,8 @@ import school.sptech.projeto_amar.domain.Produto;
 import school.sptech.projeto_amar.domain.Usuario;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.assistente.RelatorioAssistenteDTO;
+import school.sptech.projeto_amar.dto.assistente.RelatorioIaResponseDTO;
+import school.sptech.projeto_amar.dto.assistente.TabelaRelatorioDTO;
 import school.sptech.projeto_amar.exception.assistenteException.ErroAoChamarIaException;
 import school.sptech.projeto_amar.repository.MovimentacaoRepository;
 import school.sptech.projeto_amar.repository.ProdutoLoteRepository;
@@ -26,7 +27,11 @@ import school.sptech.projeto_amar.repository.ProdutoRepository;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,10 +60,6 @@ class AssistenteServiceTest {
     @Mock
     private AssistenteIaResponseValidatorService assistenteIaResponseValidatorService;
 
-    @Mock
-    private AssistenteRelatorioPdfMapperService assistenteRelatorioPdfMapperService;
-
-    @InjectMocks
     private AssistenteService service;
 
     private Movimentacao movimentacaoEntrada;
@@ -67,6 +68,15 @@ class AssistenteServiceTest {
 
     @BeforeEach
     void setUp() {
+        service = new AssistenteService(
+                chatModel,
+                movimentacaoRepository,
+                produtoRepository,
+                produtoLoteRepository,
+                assistenteFallbackService,
+                assistenteIaResponseValidatorService,
+                new AssistenteIaJsonParserService());
+
         Categoria categoria = new Categoria();
         categoria.setId(1);
         categoria.setNome("Alimentos");
@@ -102,41 +112,44 @@ class AssistenteServiceTest {
     }
 
     @Test
-    @DisplayName("gerarRelatorioHistoricoEntradas: deve retornar resposta da IA quando aderente")
+    @DisplayName("gerarRelatorioHistoricoEntradas: deve formatar resposta estruturada da IA quando aderente")
     void deveRetornarRespostaIaQuandoAderente() {
-        when(movimentacaoRepository.findTop20ByTipoOrderByDataDescIdDesc(TipoMovimentacao.ENTRADA))
-                .thenReturn(List.of(movimentacaoEntrada));
-        when(movimentacaoRepository.countByTipo(TipoMovimentacao.ENTRADA)).thenReturn(1L);
-        when(movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.ENTRADA)).thenReturn(10);
+        mockHistoricoEntradasBasico();
 
-        String respostaIa = "Resumo executivo: Estoque equilibrado.\n"
-                + "Prioridade: media\n"
-                + "Análise: Foram registradas 1 entradas e 10 itens.\n"
-                + "Ações recomendadas: Manter acompanhamento semanal.";
-
+        String respostaIa = """
+                {
+                  "resumo_executivo": "Estoque equilibrado.",
+                  "prioridade": "media",
+                  "analise": ["Foram registradas 1 entradas e 10 itens."],
+                  "acoes_recomendadas": ["Manter acompanhamento semanal."],
+                  "tabelas": [
+                    {"titulo": "Ultimas entradas", "colunas": ["Data", "Produto"], "linhas": [["01/08/2026", "Arroz"]]}
+                  ]
+                }
+                """;
         mockIaResposta(respostaIa);
-        when(assistenteIaResponseValidatorService.normalizarSaidaIa(respostaIa)).thenReturn(respostaIa);
-        when(assistenteIaResponseValidatorService.isRespostaAderenteAosDados(eq(respostaIa), anyString()))
-                .thenReturn(true);
+
+        when(assistenteIaResponseValidatorService.isRespostaAderenteAosDados(
+                any(RelatorioIaResponseDTO.class), anyString())).thenReturn(true);
+        when(assistenteIaResponseValidatorService.normalizarSaidaIa(anyString()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(assistenteIaResponseValidatorService.isTabelaValida(any(TabelaRelatorioDTO.class))).thenReturn(true);
 
         String resultado = service.gerarRelatorioHistoricoEntradas("Me mostre o resumo");
 
-        assertEquals(respostaIa, resultado);
+        assertTrue(resultado.contains("Resumo executivo: Estoque equilibrado."));
+        assertTrue(resultado.contains("Prioridade: media"));
+        assertTrue(resultado.contains("Análise: Foram registradas 1 entradas e 10 itens."));
+        assertTrue(resultado.contains("Ações recomendadas: Manter acompanhamento semanal."));
         verify(assistenteFallbackService, never()).gerarRelatorioDeterministico(anyString(), anyString());
     }
 
     @Test
     @DisplayName("gerarRelatorioHistoricoSaidas: deve usar fallback deterministico quando resposta nao aderente")
     void deveUsarFallbackDeterministicoQuandoRespostaNaoAderente() {
-        when(movimentacaoRepository.findTop20ByTipoOrderByDataDescIdDesc(TipoMovimentacao.SAIDA))
-                .thenReturn(List.of(movimentacaoSaida));
-        when(movimentacaoRepository.countByTipo(TipoMovimentacao.SAIDA)).thenReturn(1L);
-        when(movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.SAIDA)).thenReturn(4);
+        mockHistoricoSaidasBasico();
 
-        mockIaResposta("resposta ruim");
-        when(assistenteIaResponseValidatorService.normalizarSaidaIa("resposta ruim")).thenReturn("resposta ruim");
-        when(assistenteIaResponseValidatorService.isRespostaAderenteAosDados(eq("resposta ruim"), anyString()))
-                .thenReturn(false);
+        mockIaResposta("resposta ruim sem json");
         when(assistenteFallbackService.gerarRelatorioDeterministico(eq("histórico de saídas"), anyString()))
                 .thenReturn("fallback-deterministico");
 
@@ -144,6 +157,8 @@ class AssistenteServiceTest {
 
         assertEquals("fallback-deterministico", resultado);
         verify(assistenteFallbackService).gerarRelatorioDeterministico(eq("histórico de saídas"), anyString());
+        verify(assistenteIaResponseValidatorService, never()).isRespostaAderenteAosDados(
+                any(RelatorioIaResponseDTO.class), anyString());
     }
 
     @Test
@@ -164,10 +179,8 @@ class AssistenteServiceTest {
     @Test
     @DisplayName("gerarRelatorioHistoricoProdutosCadastrados: deve lançar excecao para erro nao relacionado a quota")
     void deveLancarErroAoChamarIaQuandoNaoForQuota() {
-        when(produtoRepository.findTop30ByOrderByIdDesc()).thenReturn(List.of(produto));
-        when(produtoRepository.count()).thenReturn(1L);
-        when(produtoRepository.countByStatus("ATIVO")).thenReturn(1L);
-        when(produtoRepository.countByStatus("INATIVO")).thenReturn(0L);
+        mockProdutosCadastradosBasico();
+
         when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("timeout de rede"));
 
         assertThrows(
@@ -176,110 +189,154 @@ class AssistenteServiceTest {
     }
 
     @Test
-    @DisplayName("gerarRelatorioHistoricoEntradasParaPdf: deve mapear texto para DTO com titulo e tipo corretos")
-    void deveMapearEntradasParaPdf() {
+    @DisplayName("gerarRelatorioHistoricoEntradasParaPdf: deve retornar tabelas da IA e campos mapeados quando aderente")
+    void deveMapearEntradasParaPdfComTabelasDaIa() {
         mockHistoricoEntradasBasico();
-        when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("429 quota exceeded"));
-        when(assistenteFallbackService.gerarRelatorioFallback(anyString(), anyString(), anyString(),
-                any(RuntimeException.class)))
-                .thenReturn("texto-entradas");
 
-        RelatorioAssistenteDTO dto = new RelatorioAssistenteDTO(
-                "Resumo",
-                "historico-entradas",
-                "media",
-                List.of("linha"),
-                List.of("acao"));
+        String respostaIa = """
+                ```json
+                {
+                  "resumo_executivo": "Estoque equilibrado.",
+                  "prioridade": "alta",
+                  "analise": ["Foram registradas 1 entradas e 10 itens."],
+                  "acoes_recomendadas": ["Manter acompanhamento semanal."],
+                  "tabelas": [
+                    {"titulo": "Totais de entradas", "colunas": ["Indicador", "Valor"], "linhas": [["Itens que entraram", "10"]]}
+                  ]
+                }
+                ```
+                """;
+        mockIaResposta(respostaIa);
 
-        when(assistenteRelatorioPdfMapperService.converterTextoEmRelatorioDto(
-                "Histórico de Entradas",
-                "historico-entradas",
-                "texto-entradas")).thenReturn(dto);
+        when(assistenteIaResponseValidatorService.isRespostaAderenteAosDados(
+                any(RelatorioIaResponseDTO.class), anyString())).thenReturn(true);
+        when(assistenteIaResponseValidatorService.normalizarSaidaIa(anyString()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+        when(assistenteIaResponseValidatorService.isTabelaValida(any(TabelaRelatorioDTO.class))).thenReturn(true);
 
         RelatorioAssistenteDTO resultado = service.gerarRelatorioHistoricoEntradasParaPdf("Pergunta");
 
-        assertSame(dto, resultado);
+        assertEquals("Estoque equilibrado.", resultado.titulo());
+        assertEquals("historico-entradas", resultado.tipo());
+        assertEquals("alta", resultado.prioridade());
+        assertEquals(List.of("Foram registradas 1 entradas e 10 itens."), resultado.response());
+        assertEquals(List.of("Manter acompanhamento semanal."), resultado.acoes_recomendadas());
+
+        assertNotNull(resultado.tabelas());
+        assertEquals(1, resultado.tabelas().size());
+        assertEquals("Totais de entradas", resultado.tabelas().get(0).titulo());
+        assertEquals(List.of("Indicador", "Valor"), resultado.tabelas().get(0).colunas());
     }
 
     @Test
-    @DisplayName("gerarRelatorioHistoricoSaidasParaPdf: deve mapear texto para DTO com titulo e tipo corretos")
-    void deveMapearSaidasParaPdf() {
+    @DisplayName("gerarRelatorioHistoricoEntradasParaPdf: deve usar tabelas determinísticas quando IA não retorna tabelas")
+    void deveUsarTabelasDeterministicasQuandoIaNaoDevolveTabelas() {
+        mockHistoricoEntradasBasico();
+
+        String respostaIa = """
+                {
+                  "resumo_executivo": "Estoque equilibrado.",
+                  "prioridade": "baixa",
+                  "analise": ["Foram registradas 1 entradas."],
+                  "acoes_recomendadas": ["Monitorar giro."]
+                }
+                """;
+        mockIaResposta(respostaIa);
+
+        when(assistenteIaResponseValidatorService.isRespostaAderenteAosDados(
+                any(RelatorioIaResponseDTO.class), anyString())).thenReturn(true);
+        when(assistenteIaResponseValidatorService.normalizarSaidaIa(anyString()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        RelatorioAssistenteDTO resultado = service.gerarRelatorioHistoricoEntradasParaPdf("Pergunta");
+
+        assertNotNull(resultado.tabelas());
+        assertFalse(resultado.tabelas().isEmpty());
+        assertEquals("Totais de entradas", resultado.tabelas().get(0).titulo());
+        assertEquals("Últimas entradas registradas", resultado.tabelas().get(1).titulo());
+        assertEquals(1, resultado.tabelas().get(1).linhas().size());
+        assertEquals("Arroz", resultado.tabelas().get(1).linhas().get(0).get(1));
+    }
+
+    @Test
+    @DisplayName("gerarRelatorioHistoricoSaidasParaPdf: deve montar DTO de contingencia com tabelas determinísticas na cota excedida")
+    void deveMapearSaidasParaPdfEmContingencia() {
         mockHistoricoSaidasBasico();
+
         when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("429 quota exceeded"));
-        when(assistenteFallbackService.gerarRelatorioFallback(anyString(), anyString(), anyString(),
-                any(RuntimeException.class)))
-                .thenReturn("texto-saidas");
+        when(assistenteFallbackService.gerarRelatorioContingenciaEstruturado(
+                eq("histórico de saídas"), anyString(), anyString()))
+                .thenReturn(new RelatorioIaResponseDTO(
+                        "Relatório gerado em modo contingência (sem IA) para histórico de saídas.",
+                        "media",
+                        List.of("AVISO: Este relatório não foi gerado por IA."),
+                        List.of("Tentar novamente mais tarde."),
+                        null));
 
-        RelatorioAssistenteDTO dto = new RelatorioAssistenteDTO(
-                "Resumo",
-                "historico-saidas",
-                "media",
-                List.of("linha"),
-                List.of("acao"));
+        RelatorioAssistenteDTO resultado = service.gerarRelatorioHistoricoSaidasParaPdf("Como estao as saidas?");
 
-        when(assistenteRelatorioPdfMapperService.converterTextoEmRelatorioDto(
-                "Histórico de Saídas",
-                "historico-saidas",
-                "texto-saidas")).thenReturn(dto);
+        assertEquals("historico-saidas", resultado.tipo());
+        assertEquals("media", resultado.prioridade());
+        assertTrue(resultado.response().get(0).toLowerCase().contains("não foi gerado por ia"));
 
-        RelatorioAssistenteDTO resultado = service.gerarRelatorioHistoricoSaidasParaPdf("Pergunta");
-
-        assertSame(dto, resultado);
+        assertNotNull(resultado.tabelas());
+        assertFalse(resultado.tabelas().isEmpty());
+        assertEquals("Totais de saídas", resultado.tabelas().get(0).titulo());
     }
 
     @Test
-    @DisplayName("gerarRelatorioDesempenhoGeralParaPdf: deve mapear texto para DTO com titulo e tipo corretos")
-    void deveMapearDesempenhoParaPdf() {
+    @DisplayName("gerarRelatorioDesempenhoGeralParaPdf: deve incluir tabelas de indicadores e top produtos em contingencia")
+    void deveMapearDesempenhoParaPdfEmContingencia() {
         mockDesempenhoGeralBasico();
+
         when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("429 quota exceeded"));
-        when(assistenteFallbackService.gerarRelatorioFallback(anyString(), anyString(), anyString(),
-                any(RuntimeException.class)))
-                .thenReturn("texto-desempenho");
+        when(assistenteFallbackService.gerarRelatorioContingenciaEstruturado(
+                eq("desempenho geral do estoque"), anyString(), anyString()))
+                .thenReturn(new RelatorioIaResponseDTO(
+                        "Relatório gerado em modo contingência (sem IA).",
+                        "media",
+                        List.of("AVISO: Este relatório não foi gerado por IA."),
+                        List.of("Tentar novamente mais tarde."),
+                        null));
 
-        RelatorioAssistenteDTO dto = new RelatorioAssistenteDTO(
-                "Resumo",
-                "desempenho-geral",
-                "media",
-                List.of("linha"),
-                List.of("acao"));
+        RelatorioAssistenteDTO resultado = service.gerarRelatorioDesempenhoGeralParaPdf("Analise o panorama geral");
 
-        when(assistenteRelatorioPdfMapperService.converterTextoEmRelatorioDto(
-                "Desempenho Geral do Estoque",
-                "desempenho-geral",
-                "texto-desempenho")).thenReturn(dto);
+        assertEquals("desempenho-geral", resultado.tipo());
 
-        RelatorioAssistenteDTO resultado = service.gerarRelatorioDesempenhoGeralParaPdf("Pergunta");
-
-        assertSame(dto, resultado);
+        assertNotNull(resultado.tabelas());
+        assertEquals(3, resultado.tabelas().size());
+        assertEquals("Indicadores gerais do estoque", resultado.tabelas().get(0).titulo());
+        assertEquals("Top produtos por entradas", resultado.tabelas().get(1).titulo());
+        assertEquals(List.of("Arroz", "30"), resultado.tabelas().get(1).linhas().get(0));
+        assertEquals("Top produtos por saídas", resultado.tabelas().get(2).titulo());
     }
 
     @Test
-    @DisplayName("gerarRelatorioProdutosCadastradosParaPdf: deve mapear texto para DTO com titulo e tipo corretos")
-    void deveMapearProdutosParaPdf() {
-        when(produtoRepository.findTop30ByOrderByIdDesc()).thenReturn(List.of(produto));
-        when(produtoRepository.count()).thenReturn(1L);
-        when(produtoRepository.countByStatus("ATIVO")).thenReturn(1L);
-        when(produtoRepository.countByStatus("INATIVO")).thenReturn(0L);
+    @DisplayName("gerarRelatorioProdutosCadastradosParaPdf: deve incluir tabela de produtos cadastrados em contingencia")
+    void deveMapearProdutosParaPdfEmContingencia() {
+        mockProdutosCadastradosBasico();
+
         when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("429 quota exceeded"));
-        when(assistenteFallbackService.gerarRelatorioFallback(anyString(), anyString(), anyString(),
-                any(RuntimeException.class)))
-                .thenReturn("texto-produtos");
+        when(assistenteFallbackService.gerarRelatorioContingenciaEstruturado(
+                eq("histórico de produtos cadastrados"), anyString(), anyString()))
+                .thenReturn(new RelatorioIaResponseDTO(
+                        "Relatório gerado em modo contingência (sem IA).",
+                        "media",
+                        List.of("AVISO: Este relatório não foi gerado por IA."),
+                        List.of("Tentar novamente mais tarde."),
+                        null));
 
-        RelatorioAssistenteDTO dto = new RelatorioAssistenteDTO(
-                "Resumo",
-                "produtos-cadastrados",
-                "media",
-                List.of("linha"),
-                List.of("acao"));
+        RelatorioAssistenteDTO resultado = service.gerarRelatorioProdutosCadastradosParaPdf("Liste os produtos");
 
-        when(assistenteRelatorioPdfMapperService.converterTextoEmRelatorioDto(
-                "Histórico de Produtos Cadastrados",
-                "produtos-cadastrados",
-                "texto-produtos")).thenReturn(dto);
+        assertEquals("produtos-cadastrados", resultado.tipo());
 
-        RelatorioAssistenteDTO resultado = service.gerarRelatorioProdutosCadastradosParaPdf("Pergunta");
+        TabelaRelatorioDTO tabelaProdutos = resultado.tabelas().stream()
+                .filter(t -> t.titulo().equals("Últimos produtos cadastrados"))
+                .findFirst()
+                .orElseThrow();
 
-        assertSame(dto, resultado);
+        assertEquals(List.of("ID", "Nome", "Categoria", "Unidade", "Status"), tabelaProdutos.colunas());
+        assertEquals(List.of("1", "Arroz", "Alimentos", "kg", "ATIVO"), tabelaProdutos.linhas().get(0));
     }
 
     private void mockHistoricoEntradasBasico() {
@@ -317,6 +374,13 @@ class AssistenteServiceTest {
                 .thenReturn(List.<Object[]>of(new Object[] { "Arroz", 30 }));
         when(movimentacaoRepository.findTopProdutosPorTipo(eq(TipoMovimentacao.SAIDA), any()))
                 .thenReturn(List.<Object[]>of(new Object[] { "Arroz", 20 }));
+    }
+
+    private void mockProdutosCadastradosBasico() {
+        when(produtoRepository.findTop30ByOrderByIdDesc()).thenReturn(List.of(produto));
+        when(produtoRepository.count()).thenReturn(1L);
+        when(produtoRepository.countByStatus("ATIVO")).thenReturn(1L);
+        when(produtoRepository.countByStatus("INATIVO")).thenReturn(0L);
     }
 
     private void mockIaResposta(String texto) {
