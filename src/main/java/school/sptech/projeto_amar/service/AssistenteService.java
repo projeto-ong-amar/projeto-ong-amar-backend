@@ -7,9 +7,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.stereotype.Service;
 import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.domain.Produto;
@@ -39,6 +43,7 @@ public class AssistenteService {
         private final AssistenteFallbackService assistenteFallbackService;
         private final AssistenteIaResponseValidatorService assistenteIaResponseValidatorService;
         private final AssistenteIaJsonParserService assistenteIaJsonParserService;
+        private List<ToolCallback> toolCallbacks = List.of();
 
         public AssistenteService(
                         ChatModel chatModel,
@@ -55,6 +60,14 @@ public class AssistenteService {
                 this.assistenteFallbackService = assistenteFallbackService;
                 this.assistenteIaResponseValidatorService = assistenteIaResponseValidatorService;
                 this.assistenteIaJsonParserService = assistenteIaJsonParserService;
+        }
+
+        @org.springframework.beans.factory.annotation.Autowired
+        public void setToolCallbacks(ObjectProvider<ToolCallbackProvider> provider) {
+                ToolCallbackProvider toolCallbackProvider = provider.getIfAvailable();
+                if (toolCallbackProvider != null) {
+                        this.toolCallbacks = List.of(toolCallbackProvider.getToolCallbacks());
+                }
         }
 
         private record DadosRelatorio(String texto, List<TabelaRelatorioDTO> tabelas) {
@@ -453,12 +466,19 @@ public class AssistenteService {
                                   ]
                                 }
                                 Regras obrigatórias do conteúdo:
-                                - Use somente informações existentes nos dados do banco enviados.
+                                - Use somente informações existentes nos dados do banco enviados ou obtidas pelas ferramentas disponíveis.
                                 - Não invente processos, contextos ou entidades externas.
                                 - Não mencione doadores, campanhas, FIFO, sustentabilidade ou estratégias externas se isso não estiver nos dados.
                                 - A análise deve citar explicitamente números presentes nos dados.
                                 - Gere de 1 a 3 tabelas curtas resumindo visualmente os dados mais relevantes do relatório.
                                 - Cada tabela deve ter no máximo 10 linhas e 4 colunas, e todos os valores devem ser textos simples vindos dos dados.
+
+                                Ferramentas disponíveis (chame quando relevante para enriquecer a análise):
+                                - consultarItensEntradaPorPeriodo(dataInicio, dataFim): itens que entraram no estoque no período.
+                                - consultarItensSaidaPorPeriodo(dataInicio, dataFim): itens que saíram do estoque no período.
+                                - consultarItensEmEstoque(): total de itens atualmente em estoque.
+                                - consultarProdutosEmRiscoVencimento(dataInicio, dataFim): produtos com risco de vencimento no período.
+                                Use as ferramentas para complementar os dados quando a pergunta exigir período, tendência ou risco de vencimento.
 
                                 Pergunta do usuário:
                                 %s
@@ -469,30 +489,44 @@ public class AssistenteService {
                                 .formatted(tipoRelatorio, perguntaFinal, dadosRelatorio.texto());
 
                 try {
-                        String respostaIa = chatModel.call(new Prompt(msg)).getResult().getOutput().getText();
-
-                        RelatorioIaResponseDTO respostaBruta = assistenteIaJsonParserService.parse(respostaIa);
-
-                        if (respostaBruta == null
-                                        || !assistenteIaResponseValidatorService.isRespostaAderenteAosDados(
-                                                        respostaBruta, dadosRelatorio.texto())) {
-                                return new ResultadoIa(
-                                                assistenteFallbackService.gerarRelatorioDeterministicoEstruturado(
-                                                                tipoRelatorio, dadosRelatorio.texto()),
-                                                OrigemResultado.DETERMINISTICO,
-                                                null);
+                        if (!toolCallbacks.isEmpty()) {
+                                var options = ToolCallingChatOptions.builder()
+                                                .toolCallbacks(toolCallbacks)
+                                                .build();
+                                String respostaIa = chatModel.call(new Prompt(msg, options))
+                                                .getResult().getOutput().getText();
+                                return construirResultadoIa(respostaIa, tipoRelatorio, dadosRelatorio);
                         }
 
-                        return new ResultadoIa(
-                                        normalizarResposta(respostaBruta),
-                                        OrigemResultado.IA,
-                                        null);
+                        String respostaIa = chatModel.call(new Prompt(msg))
+                                        .getResult().getOutput().getText();
+                        return construirResultadoIa(respostaIa, tipoRelatorio, dadosRelatorio);
                 } catch (RuntimeException ex) {
                         if (isQuotaExceeded(ex)) {
                                 return new ResultadoIa(null, OrigemResultado.COTA_EXCEDIDA, ex);
                         }
                         throw new ErroAoChamarIaException("Erro ao chamar serviço de IA para gerar relatório.");
                 }
+        }
+
+        private ResultadoIa construirResultadoIa(String respostaIa, String tipoRelatorio,
+                        DadosRelatorio dadosRelatorio) {
+                RelatorioIaResponseDTO respostaBruta = assistenteIaJsonParserService.parse(respostaIa);
+
+                if (respostaBruta == null
+                                || !assistenteIaResponseValidatorService.isRespostaAderenteAosDados(
+                                                respostaBruta, dadosRelatorio.texto())) {
+                        return new ResultadoIa(
+                                        assistenteFallbackService.gerarRelatorioDeterministicoEstruturado(
+                                                        tipoRelatorio, dadosRelatorio.texto()),
+                                        OrigemResultado.DETERMINISTICO,
+                                        null);
+                }
+
+                return new ResultadoIa(
+                                normalizarResposta(respostaBruta),
+                                OrigemResultado.IA,
+                                null);
         }
 
         private RelatorioIaResponseDTO normalizarResposta(RelatorioIaResponseDTO bruta) {
