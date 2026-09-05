@@ -13,6 +13,6 @@ public class CategoriaMapping {
     }
 
     public static CategoriaResponseDTO toResponse(Categoria c) {
-        return new CategoriaResponseDTO(c.getNome(), c.getDescricao());
+        return new CategoriaResponseDTO(c.getId(), c.getNome(), c.getDescricao());
     }
 }

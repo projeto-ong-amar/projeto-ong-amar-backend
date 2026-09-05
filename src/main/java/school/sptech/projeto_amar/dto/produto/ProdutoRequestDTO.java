@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
+
 @Schema(description = "Dados para cadastro de um produto")
 public record ProdutoRequestDTO(
 
@@ -21,7 +23,11 @@ public record ProdutoRequestDTO(
 
         @Schema(description = "ID da categoria associada", example = "1")
         @NotNull @Positive
-        Integer fkCategoria
+        Integer fkCategoria,
+
+        @Schema(description = "Data em que o produto foi cadastrado. Se não informada, assume a data atual.",
+                example = "2026-01-15")
+        LocalDate dataCadastro
 
 ) {
 }

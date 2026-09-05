@@ -1,10 +1,11 @@
-    CREATE DATABASE IF NOT EXISTS projeto_amar;
+CREATE DATABASE IF NOT EXISTS projeto_amar;
     USE projeto_amar;
 
     CREATE TABLE IF NOT EXISTS categoria (
         id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
         nome VARCHAR(45) NOT NULL,
-        descricao VARCHAR(45) NOT NULL
+        descricao VARCHAR(45) NOT NULL,
+        status VARCHAR(45) NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS produto (
@@ -12,6 +13,7 @@
         nome VARCHAR(45) NOT NULL,
         unidade_medida VARCHAR(45),
         status VARCHAR(45) NOT NULL DEFAULT 'ATIVO',
+        data_cadastro DATE,
         fk_categoria INT NOT NULL,
         CONSTRAINT fk_item_categoria FOREIGN KEY (fk_categoria) REFERENCES categoria(id)
     );
@@ -54,3 +56,18 @@
         CONSTRAINT fk_movimentacao_estoque_movimentacao FOREIGN KEY (fk_movimentacao) REFERENCES movimentacao(id),
         CONSTRAINT fk_movimentacao_estoque_produto_lote FOREIGN KEY (fk_produto_lote) REFERENCES produto_lote(id)
     );
+
+-- Manter
+INSERT INTO categoria (nome, descricao, status)
+VALUES
+  ('Alimentos', 'Categoria padrão: Alimentos', 'ATIVO'),
+  ('Produtos de Higiene', 'Categoria padrão: Produtos de Higiene', 'ATIVO');
+
+  --Para teste sem o JWT
+
+INSERT INTO usuario (nome, email, senha, tipo_usuario, status)
+VALUES ('Helena Admin', 'helena@email.com', 'temporaria', 'ADMINISTRADOR', 'ATIVO');
+
+
+
+

@@ -25,7 +25,8 @@ public class MovimentacaoMapping {
                 m.getProduto().getId(),
                 m.getProduto().getNome(),
                 m.getQuantidade(),
-                m.getUsuario().getNome()
+                m.getUsuario().getNome(),
+                m.getMotivo()
         );
     }
 }

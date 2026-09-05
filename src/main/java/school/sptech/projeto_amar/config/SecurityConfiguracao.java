@@ -77,10 +77,7 @@ public class SecurityConfiguracao {
                                                    AutenticacaoFilter autenticacaoFilter, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth ->
-                        auth.requestMatchers(URLS_PERMITIDAS).permitAll()
-                                .requestMatchers(HttpMethod.POST, "/usuarios/cadastrar").permitAll()
-                                .anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception ->
