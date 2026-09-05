@@ -49,7 +49,7 @@ public class UsuarioController {
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
             @ApiResponse(responseCode = "403", description = "Acesso negado")
     })
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    //@PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioResponseDTO> cadastrar(@Valid @RequestBody UsuarioRequestDTO u) {
         Usuario cadastrado = service.cadastrar(UsuarioMapping.toDomain(u));
         return ResponseEntity.status(201).body(UsuarioMapping.toResponse(cadastrado));

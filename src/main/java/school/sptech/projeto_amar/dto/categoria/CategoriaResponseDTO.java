@@ -5,6 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Dados de retorno de uma categoria")
 public record CategoriaResponseDTO(
 
+        @Schema(description = "ID da categoria", example = "1")
+        Integer id,
+
         @Schema(description = "Nome da categoria", example = "Alimentos")
         String nome,
 

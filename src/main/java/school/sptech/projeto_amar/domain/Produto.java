@@ -2,6 +2,8 @@ package school.sptech.projeto_amar.domain;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+
 @Entity
 public class Produto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -12,6 +14,8 @@ public class Produto {
     private String unidadeMedida;
 
     private String status;
+
+    private LocalDate dataCadastro;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "fk_categoria", nullable = false)
@@ -47,6 +51,14 @@ public class Produto {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDate getDataCadastro() {
+        return dataCadastro;
+    }
+
+    public void setDataCadastro(LocalDate dataCadastro) {
+        this.dataCadastro = dataCadastro;
     }
 
     public Categoria getCategoria() {
