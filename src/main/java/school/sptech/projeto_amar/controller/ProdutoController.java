@@ -35,7 +35,7 @@ public class ProdutoController {
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
             @ApiResponse(responseCode = "403", description = "Acesso negado")
     })
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    //@PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ProdutoResponseDTO> cadastrar(@Valid @RequestBody ProdutoRequestDTO produto) {
         Produto cadastro = service.cadastrar(ProdutoMapping.toDomain(produto));
         return ResponseEntity.status(201).body(ProdutoMapping.toResponse(cadastro));
@@ -66,7 +66,7 @@ public class ProdutoController {
             @ApiResponse(responseCode = "403", description = "Acesso negado"),
             @ApiResponse(responseCode = "404", description = "Produto não encontrado")
     })
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    //@PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ProdutoResponseDTO> atualizar(
             @Valid @RequestBody ProdutoRequestDTO produto,
             @Parameter(description = "ID do produto") @PathVariable Integer id) {
@@ -82,7 +82,7 @@ public class ProdutoController {
             @ApiResponse(responseCode = "403", description = "Acesso negado"),
             @ApiResponse(responseCode = "404", description = "Produto não encontrado")
     })
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    //@PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> removerPorId(
             @Parameter(description = "ID do produto") @PathVariable Integer id) {
 

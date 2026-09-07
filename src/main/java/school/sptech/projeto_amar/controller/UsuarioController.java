@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -16,31 +17,39 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import school.sptech.projeto_amar.domain.Usuario;
 import school.sptech.projeto_amar.dto.usuario.*;
 import school.sptech.projeto_amar.mapper.UsuarioMapping;
 import school.sptech.projeto_amar.service.UsuarioService;
+import school.sptech.projeto_amar.service.LoginAttemptService;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/usuarios")
 @Tag(name = "Usuários", description = "Endpoints para gerenciamento de usuários")
 public class UsuarioController {
 
-        private UsuarioService service;
+    private final UsuarioService service;
+    private final LoginAttemptService loginAttemptService;
 
-        @Value("${jwt.validity}")
-        private Long jwtValidity;
+    @Value("${security.cookie.max-age-seconds}")
+    private Long cookieMaxAge;
+    @Value("${security.cookie.secure}")
+    private boolean secureCookie;
 
-        public static final String COOKIE_NOME = "authToken";
+    public static final String COOKIE_NOME = "authToken";
 
-        public UsuarioController(UsuarioService service) {
-                this.service = service;
-        }
+    public UsuarioController(UsuarioService service, LoginAttemptService loginAttemptService) {
+        this.service = service;
+        this.loginAttemptService = loginAttemptService;
+    }
 
         @PostMapping("/cadastrar")
         @Operation(summary = "Cadastrar usuário", description = "Cria um novo usuário no sistema. Requer perfil ADMINISTRADOR")
@@ -62,23 +71,32 @@ public class UsuarioController {
                         @ApiResponse(responseCode = "400", description = "Dados inválidos"),
                         @ApiResponse(responseCode = "401", description = "Credenciais inválidas")
         })
-        public ResponseEntity<UsuarioTokenDTO> login(
+        public ResponseEntity<?> login(
                         @Valid @RequestBody UsuarioLoginDTO loginDTO,
-                        HttpServletResponse response) {
+                        HttpServletResponse response,
+                        HttpServletRequest request) {
+                String ip = request.getRemoteAddr();
 
-                UsuarioTokenDTO tokenDTO = service.login(loginDTO.email(), loginDTO.senha());
+                try {
+                        loginAttemptService.verificarPermitido(ip, loginDTO.email());
+                        UsuarioTokenDTO tokenDTO = service.login(loginDTO.email(), loginDTO.senha());
 
-                ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, tokenDTO.token())
-                                .httpOnly(true)
-                                .secure(false)
-                                .sameSite("Strict")
-                                .path("/")
-                                .maxAge(Duration.ofSeconds(jwtValidity))
-                                .build();
+                        ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, tokenDTO.token())
+                                        .httpOnly(true)
+                                        .secure(secureCookie)
+                                        .sameSite("Strict")
+                                        .path("/")
+                                        .maxAge(Duration.ofSeconds(cookieMaxAge))
+                                        .build();
 
-                response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+                        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+                        loginAttemptService.limpar(ip, loginDTO.email());
 
-                return ResponseEntity.ok(tokenDTO);
+                        return ResponseEntity.ok(new UsuarioSessaoDTO(tokenDTO.userId(), tokenDTO.nome(), tokenDTO.email()));
+                } catch (AuthenticationException exception) {
+                        loginAttemptService.registrarFalha(ip, loginDTO.email());
+                        return ResponseEntity.status(401).body(Map.of("mensagem", "Credenciais inválidas"));
+                }
         }
 
         @PostMapping("/recuperacao-senha")
@@ -105,11 +123,14 @@ public class UsuarioController {
                         @ApiResponse(responseCode = "204", description = "Logout realizado com sucesso"),
                         @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
         })
-        public ResponseEntity<Void> logout(HttpServletResponse response) {
+        public ResponseEntity<Void> logout(HttpServletResponse response,
+                        @AuthenticationPrincipal UsuarioDetalhesDTO usuario) {
+
+                service.invalidarTokens(usuario.getUsername());
 
                 ResponseCookie cookie = ResponseCookie.from(COOKIE_NOME, "")
                                 .httpOnly(true)
-                                .secure(false)
+                                .secure(secureCookie)
                                 .sameSite("Strict")
                                 .path("/")
                                 .maxAge(0)
@@ -118,6 +139,12 @@ public class UsuarioController {
                 response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
                 return ResponseEntity.noContent().build();
+        }
+
+        @GetMapping("/me")
+        public ResponseEntity<UsuarioSessaoDTO> me(@AuthenticationPrincipal UsuarioDetalhesDTO usuario) {
+                return ResponseEntity.ok(new UsuarioSessaoDTO(
+                                usuario.getId(), usuario.getNome(), usuario.getUsername()));
         }
 
         @GetMapping

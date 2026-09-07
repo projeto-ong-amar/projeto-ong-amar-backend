@@ -10,6 +10,7 @@ import school.sptech.projeto_amar.exception.produtoExceptions.SemProdutosCadastr
 import school.sptech.projeto_amar.repository.CategoriaRepository;
 import school.sptech.projeto_amar.repository.ProdutoRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -34,6 +35,10 @@ public class ProdutoService {
                 .orElseThrow(() -> new CategoriaNaoEncontradaException(p.getCategoria().getId()));
         p.setCategoria(categoria);
         p.setStatus(STATUS_ATIVO);
+
+        if (p.getDataCadastro() == null) {
+            p.setDataCadastro(LocalDate.now());
+        }
 
         return repository.save(p);
     }
@@ -73,6 +78,9 @@ public class ProdutoService {
         produtoExistente.setNome(p.getNome());
         produtoExistente.setUnidadeMedida(p.getUnidadeMedida());
         produtoExistente.setCategoria(categoria);
+        if (p.getDataCadastro() != null) {
+            produtoExistente.setDataCadastro(p.getDataCadastro());
+        }
 
         return repository.save(produtoExistente);
     }

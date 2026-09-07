@@ -13,6 +13,7 @@ import school.sptech.projeto_amar.domain.TokenRecuperacaoSenha;
 import school.sptech.projeto_amar.domain.Usuario;
 import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 import school.sptech.projeto_amar.dto.usuario.UsuarioTokenDTO;
+import school.sptech.projeto_amar.dto.usuario.UsuarioSessaoDTO;
 import school.sptech.projeto_amar.exception.usuarioExceptions.*;
 import school.sptech.projeto_amar.mapper.UsuarioMapping;
 import school.sptech.projeto_amar.repository.TokenRecuperacaoSenhaRepository;
@@ -73,9 +74,11 @@ public class UsuarioService {
 
     String token = gerenciadorTokenJwt.generateToken(auth);
 
-    Usuario usuario = repository.findByEmail(email).orElseThrow(UsuarioNaoEncontradoException::new);
+    Usuario usuario = repository.findByEmail(email)
+            .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Credenciais inválidas"));
 
-    return UsuarioMapping.entityAndTokenToDTO(usuario, token);
+    UsuarioSessaoDTO sessao = UsuarioMapping.toSessao(usuario);
+    return new UsuarioTokenDTO(sessao.userId(), sessao.nome(), sessao.email(), token);
   }
 
   @Transactional
@@ -153,6 +156,7 @@ public class UsuarioService {
     usuarioExistente.setNome(u.getNome());
     usuarioExistente.setEmail(u.getEmail());
     usuarioExistente.setSenha(passwordEncoder.encode(u.getSenha()));
+    invalidarTokens(usuarioExistente);
 
     return repository.save(usuarioExistente);
   }
@@ -161,12 +165,13 @@ public class UsuarioService {
     Usuario usuario = repository.findById(id).orElseThrow(UsuarioNaoEncontradoException::new);
 
     if (usuario.getTipoUsuario().equals(TipoUsuario.ADMINISTRADOR)) {
-      List<Usuario> administradores = repository.findAllByTipoUsuarioAndStatus(TipoUsuario.ADMINISTRADOR, "Ativo");
+      List<Usuario> administradores = repository.findAllByTipoUsuarioAndStatus(TipoUsuario.ADMINISTRADOR, "ATIVO");
       if (administradores.size() <= 1) {
         throw new ExcluirAdminException();
       }
     }
     usuario.setStatus("INATIVO");
+    invalidarTokens(usuario);
     repository.save(usuario);
   }
 
@@ -184,6 +189,16 @@ public class UsuarioService {
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException("SHA-256 não está disponível", e);
     }
+  }
+
+  public void invalidarTokens(String email) {
+    Usuario usuario = repository.findByEmail(email).orElseThrow(UsuarioNaoEncontradoException::new);
+    invalidarTokens(usuario);
+    repository.save(usuario);
+  }
+
+  private void invalidarTokens(Usuario usuario) {
+    usuario.setVersaoToken(usuario.getVersaoToken() + 1);
   }
 
 }

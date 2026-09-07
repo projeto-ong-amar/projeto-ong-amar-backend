@@ -36,7 +36,12 @@ public record RelatorioAssistenteDTO(
         @Schema(
                 description = "Lista de ações recomendadas pela IA"
         )
-        List<String> acoes_recomendadas
+        List<String> acoes_recomendadas,
+
+        @Schema(
+                description = "Tabelas de dados para demonstração visual do conteúdo do relatório"
+        )
+        List<TabelaRelatorioDTO> tabelas
 
 ) {
 }

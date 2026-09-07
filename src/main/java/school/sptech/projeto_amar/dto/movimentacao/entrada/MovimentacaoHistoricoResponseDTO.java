@@ -8,6 +8,7 @@ public record MovimentacaoHistoricoResponseDTO (
         Integer produtoId,
         String produtoNome,
         Integer quantidade,
-        String responsavelNome
+        String responsavelNome,
+        String motivo
 ) {
 }

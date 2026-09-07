@@ -1,7 +1,9 @@
 package school.sptech.projeto_amar.service;
 
 import org.springframework.stereotype.Service;
+import school.sptech.projeto_amar.dto.assistente.RelatorioIaResponseDTO;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -25,48 +27,85 @@ public class AssistenteFallbackService {
   }
 
   public String gerarRelatorioDeterministico(String tipoRelatorio, String dados) {
-    String prioridade = calcularPrioridadeDeterministicaPorDados(dados);
-    String analise = construirAnaliseDeterministica(dados);
-    String acoes = construirAcoesDeterministicas(tipoRelatorio, dados);
+    RelatorioIaResponseDTO estruturado = gerarRelatorioDeterministicoEstruturado(tipoRelatorio, dados);
+    String analise = String.join(". ", estruturado.analise());
+    if (!analise.endsWith(".")) {
+      analise += ".";
+    }
 
-    return "Resumo executivo: Relatório consolidado diretamente dos dados do banco para " + tipoRelatorio + ".\n"
-        + "Prioridade: " + prioridade + "\n"
+    return "Resumo executivo: " + estruturado.resumoExecutivo() + "\n"
+        + "Prioridade: " + estruturado.prioridade() + "\n"
         + "Análise: " + analise + "\n"
-        + "Ações recomendadas: " + acoes;
+        + "Ações recomendadas: " + String.join(" ", estruturado.acoesRecomendadas());
   }
 
-  private String construirAnaliseDeterministica(String dados) {
-    List<String> linhas = Arrays.stream(dados.split("\\R"))
+  public RelatorioIaResponseDTO gerarRelatorioDeterministicoEstruturado(String tipoRelatorio, String dados) {
+    List<String> analise = construirAnaliseDeterministica(dados);
+    List<String> acoes = montarAcoesDeterministicas(tipoRelatorio, dados);
+    String prioridade = calcularPrioridadeDeterministicaPorDados(dados);
+    String resumo = "Relatório consolidado diretamente dos dados do banco para " + tipoRelatorio + ".";
+
+    return new RelatorioIaResponseDTO(resumo, prioridade, analise, acoes, null);
+  }
+
+  public RelatorioIaResponseDTO gerarRelatorioContingenciaEstruturado(String tipoRelatorio, String pergunta, String dados) {
+    List<String> analise = new ArrayList<>();
+    analise.add("AVISO: Este relatório não foi gerado por IA. Modo contingência ativado por limite temporário de cota da API de IA.");
+    analise.addAll(extrairLinhasResumoDosDados(dados));
+
+    List<String> acoes = List.of(
+        "Validar os indicadores consolidados deste relatório com o time responsável.",
+        "Tentar novamente a geração com IA quando a cota da API estiver disponível.");
+
+    String resumo = "Relatório gerado em modo contingência (sem IA) para " + tipoRelatorio
+        + ", com dados consolidados diretamente do banco.";
+
+    return new RelatorioIaResponseDTO(
+        resumo,
+        calcularPrioridadeDeterministicaPorDados(dados),
+        analise,
+        acoes,
+        null);
+  }
+
+  private List<String> extrairLinhasResumoDosDados(String dados) {
+    return Arrays.stream(dados.split("\\R"))
         .map(String::trim)
         .filter(linha -> !linha.isBlank())
         .filter(linha -> !linha.endsWith(":"))
         .map(linha -> linha.startsWith("- ") ? linha.substring(2).trim() : linha)
+        .limit(5)
+        .toList();
+  }
+
+  private List<String> construirAnaliseDeterministica(String dados) {
+    List<String> linhas = extrairLinhasResumoDosDados(dados).stream()
         .limit(4)
         .toList();
 
     if (linhas.isEmpty()) {
-      return "Não há dados suficientes para análise detalhada.";
+      return List.of("Não há dados suficientes para análise detalhada.");
     }
 
-    return String.join(". ", linhas) + ".";
+    return linhas;
   }
 
-  private String construirAcoesDeterministicas(String tipoRelatorio, String dados) {
-    StringBuilder acoes = new StringBuilder();
-    acoes.append("Priorizar revisão dos itens destacados neste ").append(tipoRelatorio)
-        .append(" e validar os registros operacionais.");
+  private List<String> montarAcoesDeterministicas(String tipoRelatorio, String dados) {
+    List<String> acoes = new ArrayList<>();
+    acoes.add("Priorizar revisão dos itens destacados neste " + tipoRelatorio
+        + " e validar os registros operacionais.");
 
     if (dados.contains("Lotes vencidos com saldo:") || dados.contains("vencimento em até 7 dias")) {
-      acoes.append(" Programar conferência de validade e ajuste de giro dos produtos com maior risco.");
+      acoes.add("Programar conferência de validade e ajuste de giro dos produtos com maior risco.");
     }
 
     if (dados.contains("Total de movimentações de saída registradas")
         || dados.contains("Total de movimentações de entrada registradas")) {
-      acoes.append(" Comparar volumes de entrada e saída para ajustar reposição e evitar ruptura.");
+      acoes.add("Comparar volumes de entrada e saída para ajustar reposição e evitar ruptura.");
     }
 
-    acoes.append(" Regerar o relatório com IA após estabilização da resposta para obter texto analítico complementar.");
-    return acoes.toString();
+    acoes.add("Regerar o relatório com IA após estabilização da resposta para obter texto analítico complementar.");
+    return acoes;
   }
 
   private String calcularPrioridadeDeterministicaPorDados(String dados) {

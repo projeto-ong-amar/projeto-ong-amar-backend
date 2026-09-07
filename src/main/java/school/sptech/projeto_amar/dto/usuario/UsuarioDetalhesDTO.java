@@ -13,6 +13,7 @@ public class UsuarioDetalhesDTO implements UserDetails {
     private final String nome;
     private final String email;
     private final String senha;
+    private final int versaoToken;
     private final Collection<? extends GrantedAuthority> authorities;
 
     public UsuarioDetalhesDTO(Usuario usuario) {
@@ -20,6 +21,7 @@ public class UsuarioDetalhesDTO implements UserDetails {
         this.nome = usuario.getNome();
         this.email = usuario.getEmail();
         this.senha = usuario.getSenha();
+        this.versaoToken = usuario.getVersaoToken();
         this.authorities = List.of(
                 new SimpleGrantedAuthority("ROLE_" + usuario.getTipoUsuario())
         );
@@ -66,5 +68,9 @@ public class UsuarioDetalhesDTO implements UserDetails {
 
     public String getNome() {
         return nome;
+    }
+
+    public int getVersaoToken() {
+        return versaoToken;
     }
 }

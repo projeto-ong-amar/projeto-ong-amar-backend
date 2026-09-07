@@ -130,14 +130,14 @@ class UsuarioServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando email não encontrado após autenticação")
+        @DisplayName("Deve retornar falha genérica quando email não encontrado após autenticação")
         void deveLancarExcecaoEmailNaoEncontrado() {
             Authentication auth = mock(Authentication.class);
             when(authenticationManager.authenticate(any())).thenReturn(auth);
             when(gerenciadorTokenJwt.generateToken(auth)).thenReturn("token");
             when(repository.findByEmail("joao@email.com")).thenReturn(Optional.empty());
 
-            assertThrows(UsuarioNaoEncontradoException.class,
+            assertThrows(BadCredentialsException.class,
                     () -> service.login("joao@email.com", "Senha@123"));
         }
     }
@@ -301,6 +301,7 @@ class UsuarioServiceTest {
 
             assertNotNull(resultado);
             verify(repository).save(any(Usuario.class));
+            assertEquals(1, usuario.getVersaoToken());
         }
 
         @Test
@@ -328,6 +329,18 @@ class UsuarioServiceTest {
             service.remover(1);
 
             verify(repository).save(argThat(u -> "INATIVO".equals(u.getStatus())));
+            assertEquals(1, usuario.getVersaoToken());
+        }
+
+        @Test
+        @DisplayName("Deve invalidar tokens ao encerrar sessão")
+        void deveInvalidarTokensAoEncerrarSessao() {
+            when(repository.findByEmail("joao@email.com")).thenReturn(Optional.of(usuario));
+
+            service.invalidarTokens("joao@email.com");
+
+            assertEquals(1, usuario.getVersaoToken());
+            verify(repository).save(usuario);
         }
 
         @Test
@@ -343,7 +356,7 @@ class UsuarioServiceTest {
         void deveLancarExcecaoUltimoAdmin() {
             usuario.setTipoUsuario(TipoUsuario.ADMINISTRADOR);
             when(repository.findById(1)).thenReturn(Optional.of(usuario));
-            when(repository.findAllByTipoUsuarioAndStatus(TipoUsuario.ADMINISTRADOR, "Ativo"))
+            when(repository.findAllByTipoUsuarioAndStatus(TipoUsuario.ADMINISTRADOR, "ATIVO"))
                     .thenReturn(List.of(usuario));
 
             assertThrows(ExcluirAdminException.class, () -> service.remover(1));
@@ -358,7 +371,7 @@ class UsuarioServiceTest {
             outroAdmin.setTipoUsuario(TipoUsuario.ADMINISTRADOR);
 
             when(repository.findById(1)).thenReturn(Optional.of(usuario));
-            when(repository.findAllByTipoUsuarioAndStatus(TipoUsuario.ADMINISTRADOR, "Ativo"))
+            when(repository.findAllByTipoUsuarioAndStatus(TipoUsuario.ADMINISTRADOR, "ATIVO"))
                     .thenReturn(List.of(usuario, outroAdmin));
             when(repository.save(any(Usuario.class))).thenReturn(usuario);
 
