@@ -75,7 +75,8 @@ public class UsuarioService {
     String token = gerenciadorTokenJwt.generateToken(auth);
 
     Usuario usuario = repository.findByEmail(email)
-            .orElseThrow(() -> new org.springframework.security.authentication.BadCredentialsException("Credenciais inválidas"));
+        .orElseThrow(
+            () -> new org.springframework.security.authentication.BadCredentialsException("Credenciais inválidas"));
 
     UsuarioSessaoDTO sessao = UsuarioMapping.toSessao(usuario);
     return new UsuarioTokenDTO(sessao.userId(), sessao.nome(), sessao.email(), token);

@@ -36,20 +36,20 @@ import java.util.Map;
 @Tag(name = "Usuários", description = "Endpoints para gerenciamento de usuários")
 public class UsuarioController {
 
-    private final UsuarioService service;
-    private final LoginAttemptService loginAttemptService;
+        private final UsuarioService service;
+        private final LoginAttemptService loginAttemptService;
 
-    @Value("${security.cookie.max-age-seconds}")
-    private Long cookieMaxAge;
-    @Value("${security.cookie.secure}")
-    private boolean secureCookie;
+        @Value("${security.cookie.max-age-seconds}")
+        private Long cookieMaxAge;
+        @Value("${security.cookie.secure}")
+        private boolean secureCookie;
 
-    public static final String COOKIE_NOME = "authToken";
+        public static final String COOKIE_NOME = "authToken";
 
-    public UsuarioController(UsuarioService service, LoginAttemptService loginAttemptService) {
-        this.service = service;
-        this.loginAttemptService = loginAttemptService;
-    }
+        public UsuarioController(UsuarioService service, LoginAttemptService loginAttemptService) {
+                this.service = service;
+                this.loginAttemptService = loginAttemptService;
+        }
 
         @PostMapping("/cadastrar")
         @Operation(summary = "Cadastrar usuário", description = "Cria um novo usuário no sistema. Requer perfil ADMINISTRADOR")
@@ -92,7 +92,8 @@ public class UsuarioController {
                         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
                         loginAttemptService.limpar(ip, loginDTO.email());
 
-                        return ResponseEntity.ok(new UsuarioSessaoDTO(tokenDTO.userId(), tokenDTO.nome(), tokenDTO.email()));
+                        return ResponseEntity
+                                        .ok(new UsuarioSessaoDTO(tokenDTO.userId(), tokenDTO.nome(), tokenDTO.email()));
                 } catch (AuthenticationException exception) {
                         loginAttemptService.registrarFalha(ip, loginDTO.email());
                         return ResponseEntity.status(401).body(Map.of("mensagem", "Credenciais inválidas"));
