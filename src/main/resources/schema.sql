@@ -33,7 +33,8 @@ CREATE DATABASE IF NOT EXISTS projeto_amar;
         email VARCHAR(45) NOT NULL,
         senha VARCHAR(255) NOT NULL,
         tipo_usuario ENUM("ADMINISTRADOR", "VOLUNTARIO") NOT NULL,
-        status VARCHAR(45) NOT NULL
+        status VARCHAR(45) NOT NULL,
+        versao_token INT NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS movimentacao (
@@ -62,12 +63,3 @@ INSERT INTO categoria (nome, descricao, status)
 VALUES
   ('Alimentos', 'Categoria padrão: Alimentos', 'ATIVO'),
   ('Produtos de Higiene', 'Categoria padrão: Produtos de Higiene', 'ATIVO');
-
-  --Para teste sem o JWT
-
-INSERT INTO usuario (nome, email, senha, tipo_usuario, status)
-VALUES ('Helena Admin', 'helena@email.com', 'temporaria', 'ADMINISTRADOR', 'ATIVO');
-
-
-
-

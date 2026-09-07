@@ -15,6 +15,7 @@ public class Usuario {
   @Enumerated(EnumType.STRING)
   private TipoUsuario tipoUsuario;
   private String status;
+  private int versaoToken;
 
   public TipoUsuario getTipoUsuario() {
     return tipoUsuario;
@@ -62,6 +63,14 @@ public class Usuario {
 
   public void setSenha(String senha) {
     this.senha = senha;
+  }
+
+  public int getVersaoToken() {
+    return versaoToken;
+  }
+
+  public void setVersaoToken(int versaoToken) {
+    this.versaoToken = versaoToken;
   }
 
 }

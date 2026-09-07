@@ -18,8 +18,8 @@ public class UsuarioMapping {
     return user;
   }
 
-    public static UsuarioTokenDTO entityAndTokenToDTO(Usuario usuario, String token) {
-      return new UsuarioTokenDTO(usuario.getId(), usuario.getNome(), usuario.getEmail(), token);
+    public static UsuarioSessaoDTO toSessao(Usuario usuario) {
+      return new UsuarioSessaoDTO(usuario.getId(), usuario.getNome(), usuario.getEmail());
     }
 
 }
