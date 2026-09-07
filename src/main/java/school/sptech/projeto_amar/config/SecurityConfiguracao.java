@@ -15,12 +15,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
+import org.springframework.util.StringUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import school.sptech.projeto_amar.service.AutenticacaoService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.function.Supplier;
 
 @Configuration
 @EnableWebSecurity
@@ -42,8 +50,9 @@ public class SecurityConfiguracao {
     }
 
     private static final String[] URLS_PERMITIDAS = {
-        "/usuarios/login",
-                "/error",
+            "/usuarios/login",
+            "/csrf",
+            "/error",
             "/swagger-ui",
             "/swagger-ui/**",
             "/swagger-ui.html",
@@ -79,6 +88,7 @@ public class SecurityConfiguracao {
         if (csrfEnabled) {
             http.csrf(csrf -> csrf
                     .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
                     .ignoringRequestMatchers("/usuarios/login"));
         } else {
             http.csrf(AbstractHttpConfigurer::disable);
@@ -117,4 +127,23 @@ public class SecurityConfiguracao {
         return origem;
     }
 
+    private static final class SpaCsrfTokenRequestHandler extends CsrfTokenRequestAttributeHandler {
+        private final CsrfTokenRequestHandler plainTokenHandler = new CsrfTokenRequestAttributeHandler();
+        private final CsrfTokenRequestHandler xorTokenHandler = new XorCsrfTokenRequestAttributeHandler();
+
+        @Override
+        public void handle(HttpServletRequest request, HttpServletResponse response,
+                           Supplier<CsrfToken> csrfToken) {
+            xorTokenHandler.handle(request, response, csrfToken);
+            csrfToken.get();
+        }
+
+        @Override
+        public String resolveCsrfTokenValue(HttpServletRequest request, CsrfToken csrfToken) {
+            String headerValue = request.getHeader(csrfToken.getHeaderName());
+            return StringUtils.hasText(headerValue)
+                    ? plainTokenHandler.resolveCsrfTokenValue(request, csrfToken)
+                    : xorTokenHandler.resolveCsrfTokenValue(request, csrfToken);
+        }
+    }
 }
