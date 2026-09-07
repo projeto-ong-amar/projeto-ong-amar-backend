@@ -30,11 +30,20 @@ CREATE DATABASE IF NOT EXISTS projeto_amar;
     CREATE TABLE IF NOT EXISTS usuario (
         id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
         nome VARCHAR(255) NOT NULL,
-        email VARCHAR(45) NOT NULL,
+        email VARCHAR(45) NOT NULL UNIQUE,
         senha VARCHAR(255) NOT NULL,
         tipo_usuario ENUM("ADMINISTRADOR", "VOLUNTARIO") NOT NULL,
         status VARCHAR(45) NOT NULL,
         versao_token INT NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS token_recuperacao_senha (
+        id BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+        token_hash CHAR(64) NOT NULL UNIQUE,
+        expira_em DATETIME NOT NULL,
+        utilizado BOOLEAN NOT NULL DEFAULT FALSE,
+        fk_usuario INT NOT NULL,
+        CONSTRAINT fk_token_recuperacao_usuario FOREIGN KEY (fk_usuario) REFERENCES usuario(id)
     );
 
     CREATE TABLE IF NOT EXISTS movimentacao (
