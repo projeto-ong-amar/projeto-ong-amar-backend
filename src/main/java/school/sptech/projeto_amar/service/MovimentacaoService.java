@@ -91,7 +91,7 @@ public class MovimentacaoService {
         produtoLoteRepository.save(lote);
 
         Movimentacao mov = new Movimentacao();
-        mov.setData(LocalDate.now());
+        mov.setData(entrada.dataEntrada());
         mov.setMotivo(entrada.motivo());
         mov.setTipo(TipoMovimentacao.ENTRADA);
         mov.setProduto(produto);
@@ -206,7 +206,7 @@ public class MovimentacaoService {
         }
 
         Movimentacao mov = new Movimentacao();
-        mov.setData(LocalDate.now());
+        mov.setData(saida.dataSaida());
         mov.setMotivo(saida.motivo());
         mov.setTipo(TipoMovimentacao.SAIDA);
         mov.setProduto(produto);
