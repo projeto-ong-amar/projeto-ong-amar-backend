@@ -3,11 +3,13 @@ package school.sptech.projeto_amar.service;
 import org.springframework.stereotype.Service;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.dashboard.AlimentoRiscoVencimentoResponseDTO;
+import school.sptech.projeto_amar.dto.dashboard.EstoqueProdutoAtualResponseDTO;
 import school.sptech.projeto_amar.dto.dashboard.EstoquePorTipoResponseDTO;
 import school.sptech.projeto_amar.dto.dashboard.EstoqueFechamentoMensalResponseDTO;
 import school.sptech.projeto_amar.dto.dashboard.MovimentacaoMensalResponseDTO;
 import school.sptech.projeto_amar.mapper.ProdutoLoteMapping;
 import school.sptech.projeto_amar.repository.MovimentacaoRepository;
+import school.sptech.projeto_amar.repository.ProdutoRepository;
 import school.sptech.projeto_amar.repository.ProdutoLoteRepository;
 
 import java.math.BigDecimal;
@@ -23,11 +25,14 @@ import java.util.concurrent.atomic.AtomicLong;
 public class DashboardService {
   private final MovimentacaoRepository movimentacaoRepository;
   private final ProdutoLoteRepository produtoLoteRepository;
+  private final ProdutoRepository produtoRepository;
 
   public DashboardService(MovimentacaoRepository movimentacaoRepository,
-      ProdutoLoteRepository produtoLoteRepository) {
+      ProdutoLoteRepository produtoLoteRepository,
+      ProdutoRepository produtoRepository) {
     this.movimentacaoRepository = movimentacaoRepository;
     this.produtoLoteRepository = produtoLoteRepository;
+    this.produtoRepository = produtoRepository;
   }
 
   public Integer getEstoqueAtual(LocalDate dataInicio, LocalDate dataFim) {
@@ -96,6 +101,22 @@ public class DashboardService {
         .toList();
   }
 
+  public List<EstoqueProdutoAtualResponseDTO> listarEstoqueAtualPorProduto() {
+    Map<Integer, Long> quantidadesPorProduto = produtoLoteRepository.sumQuantidadePorProduto()
+        .stream()
+        .collect(Collectors.toMap(
+            item -> ((Number) item[0]).intValue(),
+            item -> ((Number) item[1]).longValue()));
+
+    return produtoRepository.findAllByStatusOrderByNomeAsc("ATIVO")
+        .stream()
+        .map(produto -> new EstoqueProdutoAtualResponseDTO(
+            produto.getNome(),
+            produto.getCategoria().getNome(),
+            quantidadesPorProduto.getOrDefault(produto.getId(), 0L)))
+        .toList();
+  }
+
   public List<EstoqueFechamentoMensalResponseDTO> listarEstoqueFechamentoPorMes() {
     LocalDate hoje = LocalDate.now();
     LocalDate inicioDoAno = LocalDate.of(hoje.getYear(), 1, 1);
@@ -123,13 +144,9 @@ public class DashboardService {
     }
   }
 
-  public List<AlimentoRiscoVencimentoResponseDTO> listarAlimentosComRiscoDeVencimento(
-      LocalDate dataInicio, LocalDate dataFim) {
-    if (dataInicio.isAfter(dataFim)) {
-      throw new IllegalArgumentException("A data inicial deve ser anterior ou igual à data final");
-    }
-
-    return produtoLoteRepository.findAlimentosComRiscoDeVencimento(dataInicio, dataFim)
+  public List<AlimentoRiscoVencimentoResponseDTO> listarAlimentosComRiscoDeVencimento() {
+    LocalDate hoje = LocalDate.now();
+    return produtoLoteRepository.findAlimentosComRiscoDeVencimento(hoje, hoje.plusDays(30))
         .stream()
         .map(ProdutoLoteMapping::toAlimentoRiscoVencimentoResponse)
         .toList();

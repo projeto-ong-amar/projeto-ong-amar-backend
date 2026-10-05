@@ -55,6 +55,13 @@ public interface ProdutoLoteRepository extends JpaRepository<ProdutoLote, Intege
   List<Object[]> sumEstoquePorTipo();
 
   @Query("""
+      SELECT p.produto.id, COALESCE(SUM(p.quantidade), 0)
+      FROM ProdutoLote p
+      GROUP BY p.produto.id
+      """)
+  List<Object[]> sumQuantidadePorProduto();
+
+  @Query("""
       SELECT p
       FROM ProdutoLote p
       WHERE p.quantidade > 0

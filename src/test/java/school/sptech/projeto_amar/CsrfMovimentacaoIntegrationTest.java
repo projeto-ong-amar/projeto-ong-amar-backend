@@ -15,17 +15,21 @@ import school.sptech.projeto_amar.config.GerenciadorTokenJwt;
 import school.sptech.projeto_amar.domain.Categoria;
 import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.domain.Produto;
+import school.sptech.projeto_amar.domain.ProdutoLote;
 import school.sptech.projeto_amar.domain.Usuario;
 import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 import school.sptech.projeto_amar.dto.usuario.UsuarioDetalhesDTO;
 import school.sptech.projeto_amar.repository.CategoriaRepository;
 import school.sptech.projeto_amar.repository.MovimentacaoRepository;
+import school.sptech.projeto_amar.repository.ProdutoLoteRepository;
 import school.sptech.projeto_amar.repository.ProdutoRepository;
 import school.sptech.projeto_amar.repository.UsuarioRepository;
 
 import java.time.LocalDate;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.contains;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -69,8 +73,13 @@ class CsrfMovimentacaoIntegrationTest {
     @Autowired
     private MovimentacaoRepository movimentacaoRepository;
 
+    @Autowired
+    private ProdutoLoteRepository produtoLoteRepository;
+
     private Cookie authCookie;
     private String entradaJson;
+    private String productName;
+    private Produto produto;
 
     @BeforeEach
     void setUp() {
@@ -88,8 +97,9 @@ class CsrfMovimentacaoIntegrationTest {
         usuario.setStatus("ATIVO");
         usuario = usuarioRepository.save(usuario);
 
-        Produto produto = new Produto();
-        produto.setNome("Produto CSRF");
+        produto = new Produto();
+        productName = "Produto CSRF " + UUID.randomUUID();
+        produto.setNome(productName);
         produto.setUnidadeMedida("UN");
         produto.setStatus("ATIVO");
         produto.setDataCadastro(LocalDate.now());
@@ -102,6 +112,53 @@ class CsrfMovimentacaoIntegrationTest {
 
         authCookie = new Cookie("authToken", jwt);
         entradaJson = ENTRADA_JSON.formatted(produto.getId(), usuario.getId());
+    }
+
+    @Test
+    void estoqueAtualPorProdutoRetornaNomeCategoriaESomaDosLotes() throws Exception {
+        salvarLote(produto, 10);
+        salvarLote(produto, 5);
+
+        mockMvc.perform(get("/dashboard/estoque-atual-por-produto").cookie(authCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].produto").value(hasItem(productName)))
+                .andExpect(jsonPath("$[*].categoria").value(hasItem("Alimentos CSRF")))
+                .andExpect(jsonPath("$[*].quantidade").value(hasItem(15)));
+    }
+
+    private void salvarLote(Produto produto, Integer quantidade) {
+        ProdutoLote lote = new ProdutoLote();
+        lote.setProduto(produto);
+        lote.setQuantidade(quantidade);
+        lote.setDataEntrada(LocalDate.now());
+        produtoLoteRepository.save(lote);
+    }
+
+    @Test
+    void riscoVencimentoUsaPeriodoFixoDeHojeA30DiasSemParametro() throws Exception {
+        LocalDate hoje = LocalDate.now();
+        salvarLoteComValidade(5, hoje.minusDays(1));
+        Integer venceHoje = salvarLoteComValidade(5, hoje);
+        Integer venceEm30Dias = salvarLoteComValidade(5, hoje.plusDays(30));
+        salvarLoteComValidade(5, hoje.plusDays(31));
+        salvarLoteComValidade(0, hoje.plusDays(10));
+        salvarLoteComValidade(5, null);
+
+        mockMvc.perform(get("/dashboard/modal-kpi-risco-vencimento").cookie(authCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.produto == '%s')].loteId".formatted(productName))
+                        .value(contains(venceHoje, venceEm30Dias)))
+                .andExpect(jsonPath("$[?(@.produto == '%s')].categoria".formatted(productName))
+                        .value(contains("Alimentos CSRF", "Alimentos CSRF")));
+    }
+
+    private Integer salvarLoteComValidade(Integer quantidade, LocalDate validade) {
+        ProdutoLote lote = new ProdutoLote();
+        lote.setProduto(produto);
+        lote.setQuantidade(quantidade);
+        lote.setDataEntrada(LocalDate.now());
+        lote.setValidade(validade);
+        return produtoLoteRepository.save(lote).getId();
     }
 
     @Test

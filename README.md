@@ -99,6 +99,8 @@ java -jar target\projeto-amar-0.0.1-SNAPSHOT.jar
 | GET | `/produtos` | Autenticado | Listar produtos |
 | PUT | `/produtos/{id}` | ADMINISTRADOR | Atualizar produto |
 | DELETE | `/produtos/{id}` | ADMINISTRADOR | Desativar produto |
+| GET | `/dashboard/estoque-atual-por-produto` | Autenticado | Listar produtos ativos, categorias e quantidades atuais em estoque |
+| GET | `/dashboard/modal-kpi-risco-vencimento` | Autenticado | Listar lotes em estoque que vencem de hoje ate hoje + 30 dias (inclusive), sem parametros de data, com produto e categoria |
 | POST | `/categoria` | ADMINISTRADOR | Cadastrar categoria |
 | GET | `/categoria` | Autenticado | Listar categorias |
 | PUT | `/categoria/{id}` | ADMINISTRADOR | Atualizar categoria |

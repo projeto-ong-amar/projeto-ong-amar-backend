@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import school.sptech.projeto_amar.dto.dashboard.AlimentoRiscoVencimentoResponseDTO;
+import school.sptech.projeto_amar.dto.dashboard.EstoqueProdutoAtualResponseDTO;
 import school.sptech.projeto_amar.dto.dashboard.EstoquePorTipoResponseDTO;
 import school.sptech.projeto_amar.dto.dashboard.EstoqueFechamentoMensalResponseDTO;
 import school.sptech.projeto_amar.dto.dashboard.MovimentacaoMensalResponseDTO;
@@ -69,20 +70,14 @@ public class DashboardController {
   }
 
   @GetMapping("/modal-kpi-risco-vencimento")
-  @Operation(summary = "Listar itens com risco de vencimento", description = "Retorna os alimentos com risco de vencimento no intervalo de 30 dias que termina na data da próxima doação. Usado para detalhar o KPI de risco de vencimento. Requer autenticação")
+  @Operation(summary = "Listar itens com risco de vencimento", description = "Retorna os lotes com quantidade em estoque que vencem entre hoje e os próximos 30 dias, incluindo as duas datas, com produto, categoria, quantidade e validade. O período é fixo e usa a data local da máquina que executa o backend. Não requer parâmetros de data. Requer autenticação")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
-      @ApiResponse(responseCode = "400", description = "Dados inválidos"),
       @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
   })
-  public ResponseEntity<List<AlimentoRiscoVencimentoResponseDTO>> listarAlimentosComRiscoDeVencimento(
-      @Parameter(description = "Data da próxima doação (fim do período analisado)")
-      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataProximaDoacao) {
-    LocalDate dataInicio = calcDataInicio(dataProximaDoacao);
-    LocalDate dataFim = dataProximaDoacao;
-
+  public ResponseEntity<List<AlimentoRiscoVencimentoResponseDTO>> listarAlimentosComRiscoDeVencimento() {
     return ResponseEntity.ok(
-        dashboardService.listarAlimentosComRiscoDeVencimento(dataInicio, dataFim));
+        dashboardService.listarAlimentosComRiscoDeVencimento());
   }
 
   @GetMapping("/kpi-doacoes-recebidas")
@@ -133,6 +128,16 @@ public class DashboardController {
   })
   public ResponseEntity<List<EstoquePorTipoResponseDTO>> listarEstoquePorTipo() {
     return ResponseEntity.ok(dashboardService.listarEstoquePorTipo());
+  }
+
+  @GetMapping("/estoque-atual-por-produto")
+  @Operation(summary = "Estoque atual por produto", description = "Retorna o nome, a categoria e a quantidade atual em estoque de cada produto ativo. Requer autenticação")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
+      @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
+  })
+  public ResponseEntity<List<EstoqueProdutoAtualResponseDTO>> listarEstoqueAtualPorProduto() {
+    return ResponseEntity.ok(dashboardService.listarEstoqueAtualPorProduto());
   }
 
   @GetMapping("/estoque-fechamento-por-mes")
