@@ -12,14 +12,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import school.sptech.projeto_amar.config.GerenciadorTokenJwt;
-import school.sptech.projeto_amar.domain.Categoria;
+import school.sptech.projeto_amar.domain.enums.Categoria;
 import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.domain.Produto;
 import school.sptech.projeto_amar.domain.ProdutoLote;
 import school.sptech.projeto_amar.domain.Usuario;
 import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 import school.sptech.projeto_amar.dto.usuario.UsuarioDetalhesDTO;
-import school.sptech.projeto_amar.repository.CategoriaRepository;
 import school.sptech.projeto_amar.repository.MovimentacaoRepository;
 import school.sptech.projeto_amar.repository.ProdutoLoteRepository;
 import school.sptech.projeto_amar.repository.ProdutoRepository;
@@ -62,9 +61,6 @@ class CsrfMovimentacaoIntegrationTest {
     private GerenciadorTokenJwt gerenciadorTokenJwt;
 
     @Autowired
-    private CategoriaRepository categoriaRepository;
-
-    @Autowired
     private ProdutoRepository produtoRepository;
 
     @Autowired
@@ -83,11 +79,7 @@ class CsrfMovimentacaoIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Categoria categoria = new Categoria();
-        categoria.setNome("Alimentos CSRF");
-        categoria.setDescricao("Categoria de teste");
-        categoria.setStatus("ATIVO");
-        categoria = categoriaRepository.save(categoria);
+        Categoria categoria = Categoria.ALIMENTOS;
 
         Usuario usuario = new Usuario();
         usuario.setNome("Usuario CSRF");
@@ -98,11 +90,10 @@ class CsrfMovimentacaoIntegrationTest {
         usuario = usuarioRepository.save(usuario);
 
         produto = new Produto();
-        productName = "Produto CSRF " + UUID.randomUUID();
+        productName = "CSRF " + UUID.randomUUID();
         produto.setNome(productName);
         produto.setUnidadeMedida("UN");
         produto.setStatus("ATIVO");
-        produto.setDataCadastro(LocalDate.now());
         produto.setCategoria(categoria);
         produto = produtoRepository.save(produto);
 
@@ -115,6 +106,75 @@ class CsrfMovimentacaoIntegrationTest {
     }
 
     @Test
+    void listaCategoriasFixasParaSelect() throws Exception {
+        mockMvc.perform(get("/categoria").cookie(authCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(contains("ALIMENTOS", "PRODUTOS DE HIGIENE")));
+    }
+
+    @Test
+    void cadastraAtualizaEFiltraProdutoComCategoriaEnviadaPeloSelect() throws Exception {
+        Cookie csrfCookie = obterCsrfCookie();
+        String nome = "Higiene " + UUID.randomUUID();
+        String json = """
+                {"nome":"%s","unidadeMedida":"UN","categoria":"PRODUTOS DE HIGIENE"}
+                """.formatted(nome);
+        mockMvc.perform(post("/produtos")
+                        .cookie(authCookie, csrfCookie)
+                        .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.categoria").value("PRODUTOS DE HIGIENE"))
+                .andExpect(jsonPath("$.dataCadastro").doesNotExist())
+                .andExpect(jsonPath("$.fkCategoria").doesNotExist());
+
+        mockMvc.perform(get("/produtos").cookie(authCookie).param("categoria", "PRODUTOS DE HIGIENE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].nome").value(hasItem(nome)));
+
+        Integer id = produtoRepository.findAllByCategoriaAndStatus(Categoria.PRODUTOS_DE_HIGIENE, "ATIVO")
+                .stream().filter(p -> nome.equals(p.getNome())).findFirst().orElseThrow().getId();
+        mockMvc.perform(put("/produtos/{id}", id)
+                        .cookie(authCookie, csrfCookie)
+                        .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.replace("PRODUTOS DE HIGIENE", "ALIMENTOS")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.categoria").value("ALIMENTOS"));
+    }
+
+    @Test
+    void rejeitaCategoriaInvalidaENomeMaiorQueColuna() throws Exception {
+        Cookie csrfCookie = obterCsrfCookie();
+        for (String json : new String[]{
+                "{\"nome\":\"Arroz\",\"categoria\":\"OUTRA\"}",
+                "{\"nome\":\"" + "A".repeat(46) + "\",\"categoria\":\"ALIMENTOS\"}"
+        }) {
+            mockMvc.perform(post("/produtos")
+                            .cookie(authCookie, csrfCookie)
+                            .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    void cadastraProdutoSemCategoriaConformeSchema() throws Exception {
+        Cookie csrfCookie = obterCsrfCookie();
+        mockMvc.perform(post("/produtos")
+                        .cookie(authCookie, csrfCookie)
+                        .header("X-XSRF-TOKEN", csrfCookie.getValue())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nome":"%s","categoria":null}
+                                """.formatted("Sem " + UUID.randomUUID())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.categoria").isEmpty());
+    }
+
+    @Test
     void estoqueAtualPorProdutoRetornaNomeCategoriaESomaDosLotes() throws Exception {
         salvarLote(produto, 10);
         salvarLote(produto, 5);
@@ -122,7 +182,7 @@ class CsrfMovimentacaoIntegrationTest {
         mockMvc.perform(get("/dashboard/estoque-atual-por-produto").cookie(authCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].produto").value(hasItem(productName)))
-                .andExpect(jsonPath("$[*].categoria").value(hasItem("Alimentos CSRF")))
+                .andExpect(jsonPath("$[*].categoria").value(hasItem("Alimentos")))
                 .andExpect(jsonPath("$[*].quantidade").value(hasItem(15)));
     }
 
@@ -149,7 +209,7 @@ class CsrfMovimentacaoIntegrationTest {
                 .andExpect(jsonPath("$[?(@.produto == '%s')].loteId".formatted(productName))
                         .value(contains(venceHoje, venceEm30Dias)))
                 .andExpect(jsonPath("$[?(@.produto == '%s')].categoria".formatted(productName))
-                        .value(contains("Alimentos CSRF", "Alimentos CSRF")));
+                        .value(contains("Alimentos", "Alimentos")));
     }
 
     private Integer salvarLoteComValidade(Integer quantidade, LocalDate validade) {

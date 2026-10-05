@@ -11,7 +11,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import school.sptech.projeto_amar.domain.Categoria;
+import school.sptech.projeto_amar.domain.enums.Categoria;
 import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.domain.Produto;
 import school.sptech.projeto_amar.domain.Usuario;
@@ -77,9 +77,7 @@ class AssistenteServiceTest {
                 assistenteIaResponseValidatorService,
                 new AssistenteIaJsonParserService());
 
-        Categoria categoria = new Categoria();
-        categoria.setId(1);
-        categoria.setNome("Alimentos");
+        Categoria categoria = Categoria.ALIMENTOS;
 
         produto = new Produto();
         produto.setId(1);

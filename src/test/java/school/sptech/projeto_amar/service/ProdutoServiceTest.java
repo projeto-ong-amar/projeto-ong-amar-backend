@@ -8,13 +8,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import school.sptech.projeto_amar.domain.Categoria;
+import school.sptech.projeto_amar.domain.enums.Categoria;
 import school.sptech.projeto_amar.domain.Produto;
 import school.sptech.projeto_amar.exception.categoriaExceptions.CategoriaNaoEncontradaException;
 import school.sptech.projeto_amar.exception.produtoExceptions.ExisteProdutoByNomeException;
 import school.sptech.projeto_amar.exception.produtoExceptions.ProdutoNaoEncontradoException;
 import school.sptech.projeto_amar.exception.produtoExceptions.SemProdutosCadastradosException;
-import school.sptech.projeto_amar.repository.CategoriaRepository;
 import school.sptech.projeto_amar.repository.ProdutoRepository;
 
 import java.util.Collections;
@@ -34,18 +33,12 @@ class ProdutoServiceTest {
     @Mock
     private ProdutoRepository repository;
 
-    @Mock
-    private CategoriaRepository categoriaRepository;
-
     private Produto produto;
     private Categoria categoria;
 
     @BeforeEach
     void setUp() {
-        categoria = new Categoria();
-        categoria.setId(1);
-        categoria.setNome("Alimentos");
-        categoria.setStatus("ATIVO");
+        categoria = Categoria.ALIMENTOS;
 
         produto = new Produto();
         produto.setId(1);
@@ -63,7 +56,6 @@ class ProdutoServiceTest {
         @DisplayName("Deve cadastrar produto com dados válidos")
         void deveCadastrarComSucesso() {
             when(repository.existsByNomeAndStatus("Arroz", "ATIVO")).thenReturn(false);
-            when(categoriaRepository.findById(1)).thenReturn(Optional.of(categoria));
             when(repository.save(any(Produto.class))).thenReturn(produto);
 
             Produto resultado = service.cadastrar(produto);
@@ -82,12 +74,13 @@ class ProdutoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando categoria não encontrada")
-        void deveLancarExcecaoCategoriaNaoEncontrada() {
+        @DisplayName("Deve cadastrar produto sem categoria")
+        void deveCadastrarSemCategoria() {
+            produto.setCategoria(null);
             when(repository.existsByNomeAndStatus("Arroz", "ATIVO")).thenReturn(false);
-            when(categoriaRepository.findById(1)).thenReturn(Optional.empty());
+            when(repository.save(produto)).thenReturn(produto);
 
-            assertThrows(CategoriaNaoEncontradaException.class, () -> service.cadastrar(produto));
+            assertNull(service.cadastrar(produto).getCategoria());
         }
     }
 
@@ -122,11 +115,10 @@ class ProdutoServiceTest {
         @Test
         @DisplayName("Deve retornar produtos por categoria existente")
         void deveRetornarProdutosPorCategoria() {
-            when(categoriaRepository.existsByNome("Alimentos")).thenReturn(true);
-            when(repository.findAllByCategoriaNomeAndStatus("Alimentos", "ATIVO"))
+            when(repository.findAllByCategoriaAndStatus(Categoria.ALIMENTOS, "ATIVO"))
                     .thenReturn(List.of(produto));
 
-            List<Produto> resultado = service.listarPorCategoria("Alimentos");
+            List<Produto> resultado = service.listarPorCategoria("ALIMENTOS");
 
             assertFalse(resultado.isEmpty());
         }
@@ -134,8 +126,6 @@ class ProdutoServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando categoria inexistente")
         void deveLancarExcecaoCategoriaInexistente() {
-            when(categoriaRepository.existsByNome("Inexistente")).thenReturn(false);
-
             assertThrows(CategoriaNaoEncontradaException.class,
                     () -> service.listarPorCategoria("Inexistente"));
         }
@@ -143,12 +133,11 @@ class ProdutoServiceTest {
         @Test
         @DisplayName("Deve lançar exceção quando categoria sem produtos ativos")
         void deveLancarExcecaoSemProdutosNaCategoria() {
-            when(categoriaRepository.existsByNome("Alimentos")).thenReturn(true);
-            when(repository.findAllByCategoriaNomeAndStatus("Alimentos", "ATIVO"))
+            when(repository.findAllByCategoriaAndStatus(Categoria.ALIMENTOS, "ATIVO"))
                     .thenReturn(Collections.emptyList());
 
             assertThrows(SemProdutosCadastradosException.class,
-                    () -> service.listarPorCategoria("Alimentos"));
+                    () -> service.listarPorCategoria("ALIMENTOS"));
         }
     }
 
@@ -160,7 +149,6 @@ class ProdutoServiceTest {
         @DisplayName("Deve atualizar produto ATIVO existente")
         void deveAtualizarComSucesso() {
             when(repository.findById(1)).thenReturn(Optional.of(produto));
-            when(categoriaRepository.findById(1)).thenReturn(Optional.of(categoria));
             when(repository.save(any(Produto.class))).thenReturn(produto);
 
             Produto novosDados = new Produto();
@@ -200,16 +188,16 @@ class ProdutoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando categoria inexistente")
-        void deveLancarExcecaoCategoriaInexistente() {
+        @DisplayName("Deve atualizar a categoria fixa")
+        void deveAtualizarCategoria() {
             when(repository.findById(1)).thenReturn(Optional.of(produto));
-            when(categoriaRepository.findById(1)).thenReturn(Optional.empty());
+            when(repository.save(produto)).thenReturn(produto);
 
             Produto novosDados = new Produto();
-            novosDados.setCategoria(categoria);
+            novosDados.setCategoria(Categoria.PRODUTOS_DE_HIGIENE);
 
-            assertThrows(CategoriaNaoEncontradaException.class,
-                    () -> service.atualizar(1, novosDados));
+            assertEquals(Categoria.PRODUTOS_DE_HIGIENE,
+                    service.atualizar(1, novosDados).getCategoria());
         }
     }
 
@@ -246,4 +234,3 @@ class ProdutoServiceTest {
         }
     }
 }
-

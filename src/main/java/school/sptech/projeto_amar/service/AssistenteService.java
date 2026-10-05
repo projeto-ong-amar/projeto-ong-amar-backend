@@ -310,7 +310,8 @@ public class AssistenteService {
                         for (Produto produto : produtos) {
                                 dados.append("- ID: ").append(produto.getId())
                                                 .append(" | Nome: ").append(produto.getNome())
-                                                .append(" | Categoria: ").append(produto.getCategoria().getNome())
+                                                .append(" | Categoria: ").append(valorTexto(produto.getCategoria() == null
+                                                                ? null : produto.getCategoria().getNome()))
                                                 .append(" | Unidade: ").append(produto.getUnidadeMedida())
                                                 .append(" | Status: ").append(produto.getStatus())
                                                 .append("\n");

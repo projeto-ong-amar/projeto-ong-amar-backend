@@ -1,20 +1,28 @@
 package school.sptech.projeto_amar.mapper;
 
 import org.junit.jupiter.api.Test;
-import school.sptech.projeto_amar.domain.Categoria;
+import school.sptech.projeto_amar.domain.enums.Categoria;
 import school.sptech.projeto_amar.domain.Produto;
 import school.sptech.projeto_amar.domain.ProdutoLote;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ProdutoLoteMappingTest {
 
     @Test
+    void aceitaProdutoSemCategoria() {
+        Produto produto = new Produto();
+        ProdutoLote lote = new ProdutoLote();
+        lote.setProduto(produto);
+        assertNull(ProdutoLoteMapping.toAlimentoRiscoVencimentoResponse(lote).categoria());
+    }
+
+    @Test
     void toAlimentoRiscoVencimentoResponseIncluiCategoriaEPreservaDadosDoLote() {
-        Categoria categoria = new Categoria();
-        categoria.setNome("Alimentos");
+        Categoria categoria = Categoria.ALIMENTOS;
 
         Produto produto = new Produto();
         produto.setNome("Arroz");

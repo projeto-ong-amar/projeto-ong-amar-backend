@@ -24,7 +24,7 @@ Gerenciamento de estoque completo para uma ONG, com controle de lotes, rotativid
 
 | Feature | Description |
 |---|---|
-| **Gestao de Estoque** | CRUD completo de produtos, categorias e lotes com quantidades, validades e datas de entrada |
+| **Gestao de Estoque** | CRUD de produtos e lotes com categorias fixas, quantidades, validades e datas de entrada |
 | **Rotatividade FIFO** | Saidas consomem automaticamente os lotes com menor validade primeiro |
 | **Controle de Movimentacoes** | Entrada (doacao recebida), Saida (distribuicao) e Perda (avaria) com registro por lote |
 | **Relatorios IA** | Analises inteligentes geradas pelo Google Gemini a partir dos dados reais do banco |
@@ -32,7 +32,7 @@ Gerenciamento de estoque completo para uma ONG, com controle de lotes, rotativid
 | **Fallback Inteligente** | Quando a IA falha ou excede quota, um relatorio deterministico e gerado automaticamente |
 | **Autenticacao JWT** | Login via HttpOnly cookies com SameSite=Strict, tambem suporta header Bearer |
 | **Controle de Acesso** | Roles: ADMINISTRADOR (acesso total) e VOLUNTARIO (acesso limitado) |
-| **Soft-Delete** | Usuarios, produtos e categorias nunca sao removidos — apenas desativados |
+| **Soft-Delete** | Usuarios e produtos nunca sao removidos — apenas desativados |
 | **Documentacao Swagger** | API documentada com OpenAPI 3, acessivel em `/swagger-ui` |
 | **Validacao Multi-Camada** | Respostas da IA sao validadas contra os dados reais antes de serem retornadas |
 
@@ -100,11 +100,12 @@ java -jar target\projeto-amar-0.0.1-SNAPSHOT.jar
 | PUT | `/produtos/{id}` | ADMINISTRADOR | Atualizar produto |
 | DELETE | `/produtos/{id}` | ADMINISTRADOR | Desativar produto |
 | GET | `/dashboard/estoque-atual-por-produto` | Autenticado | Listar produtos ativos, categorias e quantidades atuais em estoque |
+| GET | `/dashboard/kpi-vencimento-7-dias` | Autenticado | Somar unidades de produtos ativos que vencem de hoje ate hoje + 7 dias (inclusive) |
+| GET | `/dashboard/kpi-estoque-baixo?limite=10` | Autenticado | Somar unidades de produtos ativos cujo estoque total e menor que o limite positivo obrigatorio |
+| GET | `/dashboard/kpi-doacoes-semana` | Autenticado | Contar registros de entrada de segunda-feira ate hoje (inclusive), pela data da movimentacao |
+| GET | `/dashboard/kpi-sem-movimentacao-60-dias` | Autenticado | Somar estoque de produtos ativos sem movimentacao de hoje - 59 dias ate hoje, incluindo produtos nunca movimentados |
 | GET | `/dashboard/modal-kpi-risco-vencimento` | Autenticado | Listar lotes em estoque que vencem de hoje ate hoje + 30 dias (inclusive), sem parametros de data, com produto e categoria |
-| POST | `/categoria` | ADMINISTRADOR | Cadastrar categoria |
-| GET | `/categoria` | Autenticado | Listar categorias |
-| PUT | `/categoria/{id}` | ADMINISTRADOR | Atualizar categoria |
-| DELETE | `/categoria/{id}` | ADMINISTRADOR | Desativar categoria |
+| GET | `/categoria` | Autenticado | Listar valores fixos para o select de categorias |
 | POST | `/movimentacao/entrada` | Autenticado | Registrar entrada de estoque |
 | PUT | `/movimentacao/entrada/{id}` | Autenticado | Atualizar entrada |
 | DELETE | `/movimentacao/entrada/{id}` | Autenticado | Remover entrada |
@@ -140,7 +141,6 @@ graph TD
     subgraph Services["Service Layer"]
         US["UsuarioService"]
         PS["ProdutoService"]
-        CS["CategoriaService"]
         MS["MovimentacaoService"]
         AS["AssistenteService"]
         FS["AssistenteFallbackService"]
@@ -153,7 +153,6 @@ graph TD
     subgraph Repos["Repository Layer (Spring Data JPA)"]
         UR["UsuarioRepository"]
         PR["ProdutoRepository"]
-        CR["CategoriaRepository"]
         MR["MovimentacaoRepository"]
         PLR["ProdutoLoteRepository"]
     end
@@ -230,7 +229,7 @@ projeto-ong-amar-backend/
 │   ├── domain/
 │   │   ├── Usuario.java                      # User entity
 │   │   ├── Produto.java                      # Product entity
-│   │   ├── Categoria.java                    # Category entity
+│   │   ├── enums/Categoria.java              # Fixed category enum
 │   │   ├── ProdutoLote.java                  # Batch tracking (qty, expiry)
 │   │   ├── Movimentacao.java                 # Stock movement
 │   │   ├── MovimentacaoEstoque.java          # Movement-to-batch join
@@ -250,7 +249,7 @@ projeto-ong-amar-backend/
 │       └── PdfRelatorioPageEvent.java        # PDF header/watermark/footer
 ├── src/main/resources/
 │   ├── application.properties                # Config (env var placeholders)
-│   ├── schema.sql                            # MySQL DDL (6 tables)
+│   ├── schema.sql                            # MySQL DDL
 │   └── static/logo-amar.png                  # NGO logo for PDFs
 ├── src/test/                                 # JUnit 5 + Mockito tests (H2)
 ├── .env.example                              # Environment template
@@ -261,12 +260,39 @@ projeto-ong-amar-backend/
 ### Schema do Banco
 
 ```
-categoria ──< produto ──< produto_lote
+              produto ──< produto_lote
                               │
 usuario ──< movimentacao ──< movimentacao_estoque >──┘
 ```
 
-6 tabelas: `categoria`, `produto`, `produto_lote`, `usuario`, `movimentacao`, `movimentacao_estoque`
+O fluxo de categorias nao depende mais de uma tabela `categoria`. O campo
+`produto.categoria` armazena os valores fixos `ALIMENTOS` e `PRODUTOS DE HIGIENE`.
+
+### Categorias no frontend
+
+O select deve enviar o valor da categoria diretamente no cadastro ou atualizacao
+de produtos, substituindo o antigo campo `fkCategoria`:
+
+```json
+{"nome":"Arroz","unidadeMedida":"kg","categoria":"ALIMENTOS"}
+```
+
+Para produtos de higiene, use `"categoria":"PRODUTOS DE HIGIENE"` (com espacos).
+`GET /categoria` retorna `["ALIMENTOS","PRODUTOS DE HIGIENE"]`, caso o frontend
+queira carregar as opcoes pela API. Nao existem mais endpoints de cadastro,
+edicao ou exclusao de categorias.
+
+Requests e responses de produtos usam a categoria como string, nao como objeto
+com ID. O filtro `GET /produtos?categoria=ALIMENTOS` usa os mesmos valores.
+Valores desconhecidos sao rejeitados; categoria e unidade de medida podem ser
+`null`, conforme o schema. Nome e unidade de medida possuem limite de 45 caracteres.
+`dataCadastro` foi removido do fluxo de produtos porque a coluna nao existe mais.
+Dashboard e relatorios mantem os nomes de exibicao das categorias.
+
+Preferencias, configuracoes e autenticacao nao foram alteradas nesta adaptacao.
+`schema.sql` nao migra bancos existentes: antes de usar um banco antigo, converta
+as categorias para o ENUM e remova a antiga constraint/coluna `fk_categoria`
+e a coluna `data_cadastro`, preservando os dados necessarios em backup.
 
 ## API Documentation
 

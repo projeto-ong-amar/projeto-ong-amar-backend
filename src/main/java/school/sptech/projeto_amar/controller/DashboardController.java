@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.constraints.Positive;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,6 +36,49 @@ public class DashboardController {
 
   private LocalDate calcDataInicio(LocalDate dataProximaDoacao) {
     return dataProximaDoacao.minusDays(30);
+  }
+
+  @GetMapping("/kpi-vencimento-7-dias")
+  @Operation(summary = "Unidades com vencimento em até 7 dias", description = "Soma as unidades em estoque dos produtos ativos com validade de hoje até hoje + 7 dias, inclusive. Usa a data local do backend. Requer autenticação")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Quantidade de unidades retornada"),
+      @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
+  })
+  public ResponseEntity<Long> getUnidadesVencendoEm7Dias() {
+    return ResponseEntity.ok(dashboardService.getUnidadesVencendoEm7Dias());
+  }
+
+  @GetMapping("/kpi-estoque-baixo")
+  @Operation(summary = "Unidades de produtos com estoque baixo", description = "Soma as unidades dos produtos ativos cujo estoque total, somando todos os lotes, é menor que o limite informado. Estoque zerado contribui com zero unidades. Requer autenticação")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Quantidade de unidades retornada"),
+      @ApiResponse(responseCode = "400", description = "Limite ausente ou inválido"),
+      @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
+  })
+  public ResponseEntity<Long> getUnidadesComEstoqueBaixo(
+      @Parameter(description = "Limite exclusivo de unidades por produto, maior que zero", example = "10")
+      @RequestParam @Positive Integer limite) {
+    return ResponseEntity.ok(dashboardService.getUnidadesComEstoqueBaixo(limite));
+  }
+
+  @GetMapping("/kpi-doacoes-semana")
+  @Operation(summary = "Doações registradas nesta semana", description = "Conta os registros de entrada com data entre a segunda-feira desta semana e hoje, inclusive. Não soma unidades recebidas. Usa a data local do backend. Requer autenticação")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Quantidade de registros retornada"),
+      @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
+  })
+  public ResponseEntity<Long> getDoacoesRegistradasNaSemana() {
+    return ResponseEntity.ok(dashboardService.getDoacoesRegistradasNaSemana());
+  }
+
+  @GetMapping("/kpi-sem-movimentacao-60-dias")
+  @Operation(summary = "Unidades sem movimentação nos últimos 60 dias", description = "Soma o estoque atual dos produtos ativos sem entrada, saída ou perda nos últimos 60 dias (hoje e os 59 dias anteriores). Inclui produtos que nunca tiveram movimentação. Usa a data local do backend. Requer autenticação")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Quantidade de unidades retornada"),
+      @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
+  })
+  public ResponseEntity<Long> getUnidadesSemMovimentacaoEm60Dias() {
+    return ResponseEntity.ok(dashboardService.getUnidadesSemMovimentacaoEm60Dias());
   }
 
   @GetMapping("/kpi-estoque-atual")

@@ -1,6 +1,7 @@
 package school.sptech.projeto_amar.service;
 
 import org.springframework.stereotype.Service;
+import school.sptech.projeto_amar.domain.enums.Categoria;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.dashboard.AlimentoRiscoVencimentoResponseDTO;
 import school.sptech.projeto_amar.dto.dashboard.EstoqueProdutoAtualResponseDTO;
@@ -15,6 +16,8 @@ import school.sptech.projeto_amar.repository.ProdutoLoteRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,6 +44,29 @@ public class DashboardService {
     }
 
     return movimentacaoRepository.sumSaldoByPeriodo(dataInicio, dataFim);
+  }
+
+  public Long getUnidadesVencendoEm7Dias() {
+    LocalDate hoje = LocalDate.now();
+    return produtoLoteRepository.sumUnidadesComVencimentoNoPeriodo(hoje, hoje.plusDays(7));
+  }
+
+  public Long getUnidadesComEstoqueBaixo(Integer limite) {
+    if (limite == null || limite <= 0) {
+      throw new IllegalArgumentException("O limite de estoque baixo deve ser maior que zero");
+    }
+    return produtoLoteRepository.sumUnidadesComEstoqueBaixo(limite);
+  }
+
+  public Long getDoacoesRegistradasNaSemana() {
+    LocalDate hoje = LocalDate.now();
+    LocalDate inicio = hoje.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    return movimentacaoRepository.countByTipoAndDataBetween(TipoMovimentacao.ENTRADA, inicio, hoje);
+  }
+
+  public Long getUnidadesSemMovimentacaoEm60Dias() {
+    LocalDate hoje = LocalDate.now();
+    return produtoLoteRepository.sumUnidadesSemMovimentacaoNoPeriodo(hoje.minusDays(59), hoje);
   }
 
   public Integer getAlimentosComRiscoDeVencimento(LocalDate dataInicio, LocalDate dataFim) {
@@ -96,7 +122,8 @@ public class DashboardService {
               ? BigDecimal.ZERO
               : BigDecimal.valueOf(quantidade * 100.0 / estoqueTotal)
                   .setScale(2, RoundingMode.HALF_UP);
-          return new EstoquePorTipoResponseDTO((String) item[0], quantidade, porcentagem);
+          return new EstoquePorTipoResponseDTO(
+              item[0] == null ? null : ((Categoria) item[0]).getNome(), quantidade, porcentagem);
         })
         .toList();
   }
@@ -112,7 +139,7 @@ public class DashboardService {
         .stream()
         .map(produto -> new EstoqueProdutoAtualResponseDTO(
             produto.getNome(),
-            produto.getCategoria().getNome(),
+            produto.getCategoria() == null ? null : produto.getCategoria().getNome(),
             quantidadesPorProduto.getOrDefault(produto.getId(), 0L)))
         .toList();
   }
