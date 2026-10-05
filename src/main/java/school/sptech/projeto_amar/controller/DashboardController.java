@@ -165,7 +165,7 @@ public class DashboardController {
   }
 
   @GetMapping("/estoque-por-tipo")
-  @Operation(summary = "Estoque por tipo de produto", description = "Retorna a quantidade de itens em estoque agrupada por tipo de produto, com o percentual sobre o estoque total. Requer autenticação")
+  @Operation(summary = "Estoque por categoria de produto", description = "Retorna a quantidade de itens em estoque agrupada pela categoria do produto, com o percentual de cada categoria sobre o estoque total. Apenas lotes com quantidade maior que zero entram na conta. Lista ordenada alfabeticamente por categoria. Requer autenticação")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
       @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
