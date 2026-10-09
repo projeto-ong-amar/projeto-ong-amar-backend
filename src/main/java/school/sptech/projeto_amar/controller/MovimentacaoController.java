@@ -76,7 +76,7 @@ public class MovimentacaoController {
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
             @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
     public ResponseEntity<MovimentacaoResponseDTO> atualizarEntrada(@Valid @RequestBody EntradaRequestDTO entrada,
-            @PathVariable Integer id) {
+            @Parameter(description = "ID da movimentação") @PathVariable Integer id) {
         return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarEntrada(entrada, id)));
     }
 
@@ -84,7 +84,7 @@ public class MovimentacaoController {
     @Operation(summary = "Remover entrada", description = "Remove uma movimentação de entrada do sistema")
     @ApiResponses({ @ApiResponse(responseCode = "204", description = "Entrada removida com sucesso"),
             @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
-    public ResponseEntity<Void> removerEntrada(@PathVariable Integer id) {
+    public ResponseEntity<Void> removerEntrada(@Parameter(description = "ID da movimentação") @PathVariable Integer id) {
         service.removerEntrada(id);
         return ResponseEntity.noContent().build();
     }
@@ -134,7 +134,7 @@ public class MovimentacaoController {
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
             @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
     public ResponseEntity<MovimentacaoResponseDTO> atualizarSaida(@Valid @RequestBody SaidaRequestDTO saida,
-            @PathVariable Integer id) {
+            @Parameter(description = "ID da movimentação") @PathVariable Integer id) {
         return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarSaida(saida, id)));
     }
 
@@ -142,7 +142,7 @@ public class MovimentacaoController {
     @Operation(summary = "Remover saída", description = "Remove uma movimentação de saída do sistema")
     @ApiResponses({ @ApiResponse(responseCode = "204", description = "Saída removida com sucesso"),
             @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
-    public ResponseEntity<Void> removerSaida(@PathVariable Integer id) {
+    public ResponseEntity<Void> removerSaida(@Parameter(description = "ID da movimentação") @PathVariable Integer id) {
         service.removerSaida(id);
         return ResponseEntity.noContent().build();
     }
@@ -164,7 +164,7 @@ public class MovimentacaoController {
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
             @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
     public ResponseEntity<MovimentacaoResponseDTO> atualizarPerda(@Valid @RequestBody PerdaRequestDTO perda,
-            @PathVariable Integer id) {
+            @Parameter(description = "ID da movimentação") @PathVariable Integer id) {
         return ResponseEntity.ok(MovimentacaoMapping.toResponse(service.atualizarPerda(perda, id)));
     }
 
@@ -172,7 +172,7 @@ public class MovimentacaoController {
     @Operation(summary = "Remover perda", description = "Remove uma movimentação de perda do sistema")
     @ApiResponses({ @ApiResponse(responseCode = "204", description = "Perda removida com sucesso"),
             @ApiResponse(responseCode = "404", description = "Movimentação não encontrada") })
-    public ResponseEntity<Void> removerPerda(@PathVariable Integer id) {
+    public ResponseEntity<Void> removerPerda(@Parameter(description = "ID da movimentação") @PathVariable Integer id) {
         service.removerPerda(id);
         return ResponseEntity.noContent().build();
     }
