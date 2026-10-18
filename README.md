@@ -50,6 +50,8 @@ Gerenciamento de estoque completo para uma ONG, com controle de lotes, rotativid
 cp .env.example .env      # preencha as variaveis de ambiente
 ```
 
+Os alertas usam um SMTP Gmail configurado separadamente por `ALERT_MAIL_*`. A recuperação de senha continua usando as variáveis originais `MAIL_*`.
+
 ### Variaveis de Ambiente
 
 | Variavel | Obrigatoria | Descricao |
@@ -62,6 +64,17 @@ cp .env.example .env      # preencha as variaveis de ambiente
 | `SECURITY_PEPPER` | Sim | Pepper secreto para hash de senhas |
 | `GEMINI_API_KEY` | Nao | Chave de API do Google Gemini |
 | `GEMINI_MODEL` | Nao | Modelo de IA (padrao: `gemini-3.6-flash`) |
+| `MAIL_FROM` | Sim | Remetente SMTP usado exclusivamente na recuperacao de senha |
+| `MAIL_HOST` | Sim | Host SMTP usado exclusivamente na recuperacao de senha |
+| `MAIL_PORT` | Nao | Porta SMTP (padrao: `587`) |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | Sim | Credenciais SMTP da recuperacao de senha |
+| `ALERT_MAIL_HOST` | Para envio de alertas | Host SMTP de alertas (padrão: `smtp.gmail.com`) |
+| `ALERT_MAIL_PORT` | Não | Porta SMTP de alertas (padrão: `587`, com STARTTLS) |
+| `ALERT_MAIL_USERNAME` | Para envio de alertas | Conta Gmail usada para enviar os alertas |
+| `ALERT_MAIL_PASSWORD` | Para envio de alertas | Senha de app do Gmail; não use a senha normal da conta |
+| `ALERT_MAIL_FROM` | Para envio de alertas | Endereço Gmail autenticado, por exemplo `alertas@gmail.com` |
+| `ALERTS_EXPIRY_CRON` | Nao | Agendamento do resumo diario de vencimentos (padrao: `0 0 8 * * *`) |
+| `ALERTS_TIME_ZONE` | Nao | Fuso do agendamento (padrao: `America/Sao_Paulo`) |
 
 ### Executar
 
@@ -95,6 +108,8 @@ java -jar target\projeto-amar-0.0.1-SNAPSHOT.jar
 | GET | `/usuarios` | ADMINISTRADOR | Listar usuarios |
 | PUT | `/usuarios/{id}` | ADMINISTRADOR | Atualizar usuario |
 | DELETE | `/usuarios/{id}` | ADMINISTRADOR | Desativar usuario |
+| GET/PUT | `/configuracoes/preferencias-notificacao` | Autenticado | Ler/atualizar preferencias de e-mail do usuario autenticado |
+| GET/PUT | `/configuracoes/metricas` | Autenticado | Ler/atualizar limites e periodos globais do sistema |
 | POST | `/produtos` | ADMINISTRADOR | Cadastrar produto |
 | GET | `/produtos` | Autenticado | Listar produtos |
 | PUT | `/produtos/{id}` | ADMINISTRADOR | Atualizar produto |
@@ -104,7 +119,7 @@ java -jar target\projeto-amar-0.0.1-SNAPSHOT.jar
 | GET | `/dashboard/kpi-estoque-baixo?limite=10` | Autenticado | Somar unidades de produtos ativos cujo estoque total e menor que o limite positivo obrigatorio |
 | GET | `/dashboard/kpi-doacoes-semana` | Autenticado | Contar registros de entrada de segunda-feira ate hoje (inclusive), pela data da movimentacao |
 | GET | `/dashboard/kpi-sem-movimentacao-60-dias` | Autenticado | Somar estoque de produtos ativos sem movimentacao de hoje - 59 dias ate hoje, incluindo produtos nunca movimentados |
-| GET | `/dashboard/modal-kpi-risco-vencimento` | Autenticado | Listar lotes em estoque que vencem de hoje ate hoje + 30 dias (inclusive), sem parametros de data, com produto e categoria |
+| GET | `/dashboard/modal-kpi-risco-vencimento` | Autenticado | Listar lotes ativos em estoque dentro do periodo de risco configurado |
 | GET | `/categoria` | Autenticado | Listar valores fixos para o select de categorias |
 | POST | `/movimentacao/entrada` | Autenticado | Registrar entrada de estoque |
 | PUT | `/movimentacao/entrada/{id}` | Autenticado | Atualizar entrada |
@@ -302,6 +317,14 @@ A documentacao interativa da API esta disponivel via Swagger UI:
 http://localhost:8080/swagger-ui
 http://localhost:8080/v3/api-docs
 ```
+
+### Notificacoes por e-mail
+
+As preferencias de notificacao sao individuais por usuario e ficam no backend. O SMTP separado de alertas envia avisos de estoque baixo, risco de vencimento e novas movimentacoes `ENTRADA`/`SAIDA`; `PERDA` reavalia o estoque baixo, mas nao e tratada como uma nova saida. Os alertas sao enfileirados depois do commit e processados em segundo plano, sem segurar a resposta HTTP da movimentacao. O alerta de estoque baixo e enviado na transicao para abaixo do limite configurado. O resumo de risco de vencimento e verificado diariamente no horario definido por `ALERTS_EXPIRY_CRON`.
+
+Configure uma senha de app do Gmail nas variaveis `ALERT_MAIL_*`. A recuperacao de senha continua usando a configuracao SMTP `MAIL_*`, sem alteracoes.
+
+Para o passo a passo de configuração e uso, consulte [`docs/README_NOTIFICACOES_GMAIL.md`](docs/README_NOTIFICACOES_GMAIL.md).
 
 ## License
 

@@ -1,6 +1,7 @@
 package school.sptech.projeto_amar.service;
 
 import org.springframework.data.domain.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import school.sptech.projeto_amar.domain.*;
@@ -15,10 +16,14 @@ import school.sptech.projeto_amar.exception.produtoExceptions.ProdutoNaoEncontra
 import school.sptech.projeto_amar.exception.produtoLoteExceptions.LoteNaoEncontradoException;
 import school.sptech.projeto_amar.exception.usuarioExceptions.UsuarioNaoEncontradoException;
 import school.sptech.projeto_amar.repository.*;
+import school.sptech.projeto_amar.event.EstoqueAlteradoEvent;
+import school.sptech.projeto_amar.event.MovimentacaoCriadaEvent;
 
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class MovimentacaoService {
@@ -27,13 +32,15 @@ public class MovimentacaoService {
     private UsuarioRepository usuarioRepository;
     private ProdutoLoteRepository produtoLoteRepository;
     private MovimentacaoEstoqueRepository movimentacaoEstoqueRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public MovimentacaoService(MovimentacaoRepository repository, ProdutoRepository produtoRepository, UsuarioRepository usuarioRepository, ProdutoLoteRepository produtoLoteRepository, MovimentacaoEstoqueRepository movimentacaoEstoqueRepository) {
+    public MovimentacaoService(MovimentacaoRepository repository, ProdutoRepository produtoRepository, UsuarioRepository usuarioRepository, ProdutoLoteRepository produtoLoteRepository, MovimentacaoEstoqueRepository movimentacaoEstoqueRepository, ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.produtoRepository = produtoRepository;
         this.usuarioRepository = usuarioRepository;
         this.produtoLoteRepository = produtoLoteRepository;
         this.movimentacaoEstoqueRepository = movimentacaoEstoqueRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<Movimentacao> listar() {
@@ -76,7 +83,9 @@ public class MovimentacaoService {
         return retorno;
     }
 
+    @Transactional
     public Movimentacao entrada(EntradaRequestDTO entrada) {
+        Map<Integer, Integer> estoqueAnterior = capturarEstoque(entrada.fkProduto());
         Produto produto =
                 produtoRepository.findById(entrada.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
 
@@ -105,6 +114,8 @@ public class MovimentacaoService {
         movEstoque.setQuantidade(entrada.quantidade());
         movimentacaoEstoqueRepository.save(movEstoque);
 
+        publicarMovimentacaoCriada(mov);
+        publicarAlteracoesEstoque(estoqueAnterior);
         return mov;
     }
 
@@ -123,6 +134,8 @@ public class MovimentacaoService {
     public Movimentacao atualizarEntrada(EntradaRequestDTO entrada, Integer id) {
         Movimentacao m = repository.findById(id).orElseThrow(() ->
                 new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        Map<Integer, Integer> estoqueAnterior = capturarEstoque(m.getProduto().getId(), entrada.fkProduto());
 
         if (m.getTipo() != TipoMovimentacao.ENTRADA) {
             throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma entrada");
@@ -162,6 +175,7 @@ public class MovimentacaoService {
         movEstoque.setQuantidade(entrada.quantidade());
         movimentacaoEstoqueRepository.save(movEstoque);
 
+        publicarAlteracoesEstoque(estoqueAnterior);
         return m;
     }
 
@@ -169,6 +183,8 @@ public class MovimentacaoService {
     public void removerEntrada(Integer id) {
         Movimentacao m = repository.findById(id).orElseThrow(() ->
                 new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        Map<Integer, Integer> estoqueAnterior = capturarEstoque(m.getProduto().getId());
 
         if (m.getTipo() != TipoMovimentacao.ENTRADA) {
             throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma entrada");
@@ -190,9 +206,12 @@ public class MovimentacaoService {
 
         movimentacaoEstoqueRepository.delete(movEstoque);
         repository.delete(m);
+        publicarAlteracoesEstoque(estoqueAnterior);
     }
 
+    @Transactional
     public Movimentacao saida(SaidaRequestDTO saida){
+        Map<Integer, Integer> estoqueAnterior = capturarEstoque(saida.fkProduto());
         Produto produto =
                 produtoRepository.findById(saida.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
 
@@ -236,6 +255,8 @@ public class MovimentacaoService {
             quantidadeRestante -= retirar;
         }
 
+        publicarMovimentacaoCriada(mov);
+        publicarAlteracoesEstoque(estoqueAnterior);
         return mov;
     }
 
@@ -243,6 +264,8 @@ public class MovimentacaoService {
     public Movimentacao atualizarSaida(SaidaRequestDTO saida, Integer id) {
         Movimentacao m = repository.findById(id).orElseThrow(() ->
                 new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        Map<Integer, Integer> estoqueAnterior = capturarEstoque(m.getProduto().getId(), saida.fkProduto());
 
         if (m.getTipo() != TipoMovimentacao.SAIDA) {
             throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma saída");
@@ -302,6 +325,7 @@ public class MovimentacaoService {
         m.setUsuario(usuario);
         repository.save(m);
 
+        publicarAlteracoesEstoque(estoqueAnterior);
         return m;
     }
 
@@ -309,6 +333,8 @@ public class MovimentacaoService {
     public void removerSaida(Integer id) {
         Movimentacao m = repository.findById(id).orElseThrow(() ->
                 new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        Map<Integer, Integer> estoqueAnterior = capturarEstoque(m.getProduto().getId());
 
         if (m.getTipo() != TipoMovimentacao.SAIDA) {
             throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma saída");
@@ -328,9 +354,12 @@ public class MovimentacaoService {
 
         movimentacaoEstoqueRepository.deleteAll(itens);
         repository.delete(m);
+        publicarAlteracoesEstoque(estoqueAnterior);
     }
 
+    @Transactional
     public Movimentacao perda(PerdaRequestDTO perda) {
+        Map<Integer, Integer> estoqueAnterior = capturarEstoque(perda.fkProduto());
         Produto produto = produtoRepository.findById(perda.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
         Usuario usuario = usuarioRepository.findById(perda.fkUsuario()).orElseThrow(UsuarioNaoEncontradoException::new);
         
@@ -363,6 +392,7 @@ public class MovimentacaoService {
         movEstoque.setProdutoLote(lote);
         movimentacaoEstoqueRepository.save(movEstoque);
 
+        publicarAlteracoesEstoque(estoqueAnterior);
         return mov;
     }
 
@@ -370,6 +400,8 @@ public class MovimentacaoService {
     public Movimentacao atualizarPerda(PerdaRequestDTO perda, Integer id) {
         Movimentacao m = repository.findById(id).orElseThrow(() ->
                 new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        Map<Integer, Integer> estoqueAnterior = capturarEstoque(m.getProduto().getId(), perda.fkProduto());
 
         if (m.getTipo() != TipoMovimentacao.PERDA) {
             throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma perda");
@@ -415,6 +447,7 @@ public class MovimentacaoService {
         movEstoque.setQuantidade(perda.quantidade());
         movimentacaoEstoqueRepository.save(movEstoque);
 
+        publicarAlteracoesEstoque(estoqueAnterior);
         return m;
     }
 
@@ -422,6 +455,8 @@ public class MovimentacaoService {
     public void removerPerda(Integer id) {
         Movimentacao m = repository.findById(id).orElseThrow(() ->
                 new MovimentacaoNaoEncontradaException("Movimentação não encontrada"));
+
+        Map<Integer, Integer> estoqueAnterior = capturarEstoque(m.getProduto().getId());
 
         if (m.getTipo() != TipoMovimentacao.PERDA) {
             throw new MovimentacaoNaoEncontradaException("A movimentação informada não é uma perda");
@@ -437,10 +472,33 @@ public class MovimentacaoService {
 
         movimentacaoEstoqueRepository.delete(movEstoque);
         repository.delete(m);
+        publicarAlteracoesEstoque(estoqueAnterior);
     }
 
     public Integer calcularEstoqueTotal(Integer produtoId) {
         Integer quantidade = produtoLoteRepository.sumQuantidadeByProdutoId(produtoId);
         return quantidade == null ? 0 : quantidade;
+    }
+
+    private Map<Integer, Integer> capturarEstoque(Integer... produtoIds) {
+        Map<Integer, Integer> estoqueAnterior = new LinkedHashMap<>();
+        for (Integer produtoId : produtoIds) {
+            if (produtoId != null && !estoqueAnterior.containsKey(produtoId)) {
+                estoqueAnterior.put(produtoId, calcularEstoqueTotal(produtoId));
+            }
+        }
+        return estoqueAnterior;
+    }
+
+    private void publicarAlteracoesEstoque(Map<Integer, Integer> estoqueAnterior) {
+        estoqueAnterior.forEach((produtoId, quantidade) -> produtoRepository.findById(produtoId)
+            .ifPresent(produto -> eventPublisher.publishEvent(
+                new EstoqueAlteradoEvent(produtoId, produto.getNome(), quantidade))));
+    }
+
+    private void publicarMovimentacaoCriada(Movimentacao movimentacao) {
+        eventPublisher.publishEvent(new MovimentacaoCriadaEvent(
+            movimentacao.getTipo(), movimentacao.getProduto().getNome(), movimentacao.getQuantidade(),
+            movimentacao.getData(), movimentacao.getMotivo()));
     }
 }

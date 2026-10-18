@@ -112,5 +112,8 @@ CREATE TABLE IF NOT EXISTS preferencia_notificacao (
 
     CONSTRAINT fk_preferencia_notificacao_usuario
         FOREIGN KEY (fk_usuario)
-        REFERENCES usuario(id)
+        REFERENCES usuario(id),
+
+    CONSTRAINT uk_preferencia_notificacao_usuario
+        UNIQUE (fk_usuario)
 );

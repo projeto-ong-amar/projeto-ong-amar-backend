@@ -29,6 +29,9 @@ class DashboardServiceTest {
     @Mock
     private ProdutoRepository produtoRepository;
 
+    @Mock
+    private ConfiguracaoNotificacaoService configuracaoNotificacaoService;
+
     @InjectMocks
     private DashboardService service;
 

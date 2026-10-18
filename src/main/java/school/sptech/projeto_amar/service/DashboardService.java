@@ -29,13 +29,16 @@ public class DashboardService {
   private final MovimentacaoRepository movimentacaoRepository;
   private final ProdutoLoteRepository produtoLoteRepository;
   private final ProdutoRepository produtoRepository;
+  private final ConfiguracaoNotificacaoService configuracaoNotificacaoService;
 
   public DashboardService(MovimentacaoRepository movimentacaoRepository,
       ProdutoLoteRepository produtoLoteRepository,
-      ProdutoRepository produtoRepository) {
+      ProdutoRepository produtoRepository,
+      ConfiguracaoNotificacaoService configuracaoNotificacaoService) {
     this.movimentacaoRepository = movimentacaoRepository;
     this.produtoLoteRepository = produtoLoteRepository;
     this.produtoRepository = produtoRepository;
+    this.configuracaoNotificacaoService = configuracaoNotificacaoService;
   }
 
   public Integer getEstoqueAtual(LocalDate dataInicio, LocalDate dataFim) {
@@ -173,7 +176,8 @@ public class DashboardService {
 
   public List<AlimentoRiscoVencimentoResponseDTO> listarAlimentosComRiscoDeVencimento() {
     LocalDate hoje = LocalDate.now();
-    return produtoLoteRepository.findAlimentosComRiscoDeVencimento(hoje, hoje.plusDays(30))
+    int diasRisco = configuracaoNotificacaoService.obterMetricas().riscoVencimentoDias();
+    return produtoLoteRepository.findAlimentosComRiscoDeVencimento(hoje, hoje.plusDays(diasRisco))
         .stream()
         .map(ProdutoLoteMapping::toAlimentoRiscoVencimentoResponse)
         .toList();

@@ -98,6 +98,7 @@ public interface ProdutoLoteRepository extends JpaRepository<ProdutoLote, Intege
       SELECT p
       FROM ProdutoLote p
       WHERE p.quantidade > 0
+        AND p.produto.status = 'ATIVO'
         AND p.validade IS NOT NULL
         AND p.validade >= :dataInicio
         AND p.validade <= :dataFim
