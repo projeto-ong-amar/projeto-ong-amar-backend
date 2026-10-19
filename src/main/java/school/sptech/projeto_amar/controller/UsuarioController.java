@@ -101,6 +101,14 @@ public class UsuarioController {
         }
 
         @PostMapping("/recuperacao-senha")
+        @Operation(summary = "Solicitar recuperação de senha", description = "Solicita o envio de um link de redefinição para o e-mail informado. "
+                        + "Por segurança, a resposta não informa se existe uma conta ativa para esse endereço. "
+                        + "O link enviado expira em 15 minutos.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "Solicitação processada; se houver uma conta ativa, um link será enviado"),
+                        @ApiResponse(responseCode = "400", description = "E-mail ausente ou em formato inválido"),
+                        @ApiResponse(responseCode = "403", description = "Token CSRF ausente ou inválido")
+        })
         public ResponseEntity<Void> solicitarRecuperacaoSenha(
                         @Valid @RequestBody RecuperacaoSenhaRequestDTO requestDTO) {
                 service.solicitarRecuperacaoSenha(requestDTO.email());
@@ -108,6 +116,14 @@ public class UsuarioController {
         }
 
         @PostMapping("/redefinir-senha")
+        @Operation(summary = "Redefinir senha", description = "Define uma nova senha usando o token recebido por e-mail. "
+                        + "O token precisa estar válido, não expirado nem utilizado. A nova senha deve ter de 8 a 25 caracteres, "
+                        + "incluindo letra maiúscula, letra minúscula, número e um caractere especial dentre @$!%*?&.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "Senha redefinida com sucesso"),
+                        @ApiResponse(responseCode = "400", description = "Token inválido/expirado ou dados da nova senha inválidos"),
+                        @ApiResponse(responseCode = "403", description = "Token CSRF ausente ou inválido")
+        })
         public ResponseEntity<Void> redefinirSenha(
                         @Valid @RequestBody RedefinicaoSenhaRequestDTO requestDTO) {
                 try {
@@ -143,6 +159,11 @@ public class UsuarioController {
         }
 
         @GetMapping("/me")
+        @Operation(summary = "Obter usuário autenticado", description = "Retorna o ID, nome e e-mail do usuário associado à sessão autenticada.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Dados da sessão retornados com sucesso"),
+                        @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
+        })
         public ResponseEntity<UsuarioSessaoDTO> me(@AuthenticationPrincipal UsuarioDetalhesDTO usuario) {
                 return ResponseEntity.ok(new UsuarioSessaoDTO(
                                 usuario.getId(), usuario.getNome(), usuario.getUsername()));
