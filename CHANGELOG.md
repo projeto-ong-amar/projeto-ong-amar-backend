@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 Format: [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 
 
+## [0.4.0](2026-10-27)
+
+### General
+
+#### Features
+
+- fixa categorias e adiciona KPIs ao dashboard
+- adiciona endpoints de visao atual do estoque e ajusta risco de vencimento
+- adiciona busca de movimentações com filtros por período
+- adiciona endpoint para buscar movimentação por ID
+- adiciona endpoint para gerar relatório em PDF por período
+- adiciona busca de produtos com filtros
+- adiciona integração com front
+- adiciona funcionalidade de recuperação de senha por email
+- adiciona configuração e serviço de envio de email
+- fortalecer autenticação e sessões
+
+#### Bug Fixes
+
+- entrada e saida agora registram datas corretas
+- descomentando pre authorize
+- habilita CSRF para requisicoes SPA
+- ajustando script sql
+- corrigindo erro ao listar usuarios
+- corrige busca de movimentações por periodo
+- altera nome do campo no RelatorioMovimentacaoDTO
+- corrige envio de email e formatação
+- ajusta fluxo de autenticação
+
+#### Documentation
+
+- descreve IDs de movimentacao nos endpoints de atualizar e remover
+- documenta endpoints e DTOs que estavam sem descricao no Swagger
+
+#### Style
+
+- padroniza formatação da autenticação
+- formatando codigo
+
+
 ## [0.3.0](2026-08-17)
 
 ### Swagger
