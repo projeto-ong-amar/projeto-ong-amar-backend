@@ -119,7 +119,6 @@ public class UsuarioController {
         }
 
         @PostMapping("/redefinir-senha")
-<<<<<<< HEAD
         @Operation(
                         summary = "Redefinir senha",
                         description = "Altera a senha do usuário a partir do token recebido por e-mail. "
