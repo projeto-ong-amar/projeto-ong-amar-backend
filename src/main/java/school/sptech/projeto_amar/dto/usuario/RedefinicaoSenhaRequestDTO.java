@@ -5,35 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-<<<<<<< HEAD
-@Schema(
-        name = "RedefinicaoSenhaRequest",
-        description = "Dados para redefinir a senha usando o token enviado por e-mail"
-)
-public record RedefinicaoSenhaRequestDTO(
-
-    @Schema(
-            description = "Token de uso único recebido no link do e-mail de recuperação. Expira em 15 minutos",
-            example = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
-            requiredMode = Schema.RequiredMode.REQUIRED
-    )
-    @NotBlank String token,
-
-    @Schema(
-            description = "Nova senha. Requer de 8 a 25 caracteres, com pelo menos uma letra maiúscula, "
-                    + "uma letra minúscula, um número e um caractere especial (@ $ ! % * ? &)",
-            example = "Amar@2026",
-            minLength = 8,
-            maxLength = 25,
-            requiredMode = Schema.RequiredMode.REQUIRED
-    )
-=======
 @Schema(description = "Token recebido no e-mail e a nova senha da conta")
 public record RedefinicaoSenhaRequestDTO(
     @Schema(description = "Token de recuperação enviado por e-mail, válido por 15 minutos e utilizável uma única vez", example = "eyJhbGciOiJIUzI1NiJ9...", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank String token,
 
     @Schema(description = "Nova senha com 8 a 25 caracteres, contendo letras maiúsculas e minúsculas, número e caractere especial (@$!%*?&)", example = "NovaSenha1!", minLength = 8, maxLength = 25, requiredMode = Schema.RequiredMode.REQUIRED)
->>>>>>> d0e85d4 (docs(swagger): documenta recuperação de senha)
     @NotBlank @Size(min = 8, max = 25) @Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$") String novaSenha) {
 }
