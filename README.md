@@ -74,7 +74,7 @@ cp .env.example .env      # preencha as variaveis de ambiente
 
 # Build e executar JAR
 .\mvnw.cmd clean package
-java -jar target\projeto-amar-0.0.1-SNAPSHOT.jar
+java -jar target\projeto-amar-0.4.0.jar
 ```
 
 ### Testes
