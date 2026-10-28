@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 Format: [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 
+## [Unreleased]
+
+### Features
+
+- integra SMTP Gmail separado para notificações de estoque baixo, risco de vencimento e novas entradas/saídas, mantendo a recuperação de senha via SMTP original
+- persiste preferências individuais de notificação e configurações de métricas no backend
+- dispara alertas de movimentação e estoque após confirmação da transação; `PERDA` reavalia estoque baixo sem ser enviada como nova saída
+- processa consultas e envios dos alertas em executor assíncrono limitado, liberando a resposta da API após o commit
+- agenda resumo diário de lotes próximos do vencimento
+- conecta as configurações do frontend aos endpoints de preferências e métricas
+
+### Tests
+
+- adiciona testes de serviço para configurações e regras de disparo de notificações
+- verifica que o listener enfileira o trabalho sem aguardar o envio SMTP
+- valida build e testes do backend
+
 
 ## [0.3.0](2026-08-17)
 
