@@ -49,6 +49,8 @@ public class SecurityConfiguracao {
                 this.autenticacaoEntryPoint = autenticacaoEntryPoint;
         }
 
+        private static final String ROLE_ADMINISTRADOR = "ADMINISTRADOR";
+
         private static final String[] URLS_PERMITIDAS = {
                         "/usuarios/login",
                         "/usuarios/recuperacao-senha",
@@ -101,6 +103,10 @@ public class SecurityConfiguracao {
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                                 .requestMatchers(URLS_PERMITIDAS).permitAll()
+                                                .requestMatchers("/assistente/**").hasRole(ROLE_ADMINISTRADOR)
+                                                .requestMatchers("/dashboard/**").hasRole(ROLE_ADMINISTRADOR)
+                                                .requestMatchers(HttpMethod.PUT, "/configuracoes/metricas")
+                                                .hasRole(ROLE_ADMINISTRADOR)
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

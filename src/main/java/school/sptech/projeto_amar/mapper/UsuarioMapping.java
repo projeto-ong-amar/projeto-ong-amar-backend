@@ -19,7 +19,8 @@ public class UsuarioMapping {
   }
 
     public static UsuarioSessaoDTO toSessao(Usuario usuario) {
-      return new UsuarioSessaoDTO(usuario.getId(), usuario.getNome(), usuario.getEmail());
+      String tipo = usuario.getTipoUsuario() != null ? usuario.getTipoUsuario().name() : null;
+      return new UsuarioSessaoDTO(usuario.getId(), usuario.getNome(), usuario.getEmail(), tipo);
     }
 
 }

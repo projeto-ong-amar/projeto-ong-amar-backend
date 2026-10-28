@@ -12,7 +12,10 @@ public record UsuarioSessaoDTO(
         String nome,
 
         @Schema(description = "Email do usuário autenticado", example = "joao@email.com")
-        String email
+        String email,
+
+        @Schema(description = "Perfil de acesso do usuário", example = "ADMINISTRADOR")
+        String tipoUsuario
 
 ) {
 }

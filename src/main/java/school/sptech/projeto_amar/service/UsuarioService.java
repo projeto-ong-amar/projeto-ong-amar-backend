@@ -79,7 +79,7 @@ public class UsuarioService {
             () -> new org.springframework.security.authentication.BadCredentialsException("Credenciais inválidas"));
 
     UsuarioSessaoDTO sessao = UsuarioMapping.toSessao(usuario);
-    return new UsuarioTokenDTO(sessao.userId(), sessao.nome(), sessao.email(), token);
+    return new UsuarioTokenDTO(sessao.userId(), sessao.nome(), sessao.email(), sessao.tipoUsuario(), token);
   }
 
   @Transactional
