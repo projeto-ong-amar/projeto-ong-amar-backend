@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import school.sptech.projeto_amar.domain.Categoria;
+import school.sptech.projeto_amar.domain.enums.Categoria;
 import school.sptech.projeto_amar.domain.Produto;
 import school.sptech.projeto_amar.domain.ProdutoLote;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
@@ -78,8 +78,7 @@ class RelatorioMcpToolsServiceTest {
   void deveListarProdutosEmRisco() {
     Produto produto = new Produto();
     produto.setNome("Arroz");
-    Categoria categoria = new Categoria();
-    categoria.setNome("Alimentos");
+    Categoria categoria = Categoria.ALIMENTOS;
     produto.setCategoria(categoria);
 
     ProdutoLote lote = new ProdutoLote();

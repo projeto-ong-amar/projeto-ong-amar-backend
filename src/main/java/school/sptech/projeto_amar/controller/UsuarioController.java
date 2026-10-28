@@ -93,7 +93,8 @@ public class UsuarioController {
                         loginAttemptService.limpar(ip, loginDTO.email());
 
                         return ResponseEntity
-                                        .ok(new UsuarioSessaoDTO(tokenDTO.userId(), tokenDTO.nome(), tokenDTO.email()));
+                                        .ok(new UsuarioSessaoDTO(tokenDTO.userId(), tokenDTO.nome(), tokenDTO.email(),
+                                                        tokenDTO.tipoUsuario()));
                 } catch (AuthenticationException exception) {
                         loginAttemptService.registrarFalha(ip, loginDTO.email());
                         return ResponseEntity.status(401).body(Map.of("mensagem", "Credenciais inválidas"));
@@ -145,7 +146,8 @@ public class UsuarioController {
         @GetMapping("/me")
         public ResponseEntity<UsuarioSessaoDTO> me(@AuthenticationPrincipal UsuarioDetalhesDTO usuario) {
                 return ResponseEntity.ok(new UsuarioSessaoDTO(
-                                usuario.getId(), usuario.getNome(), usuario.getUsername()));
+                                usuario.getId(), usuario.getNome(), usuario.getUsername(),
+                                usuario.getTipoUsuario()));
         }
 
         @GetMapping

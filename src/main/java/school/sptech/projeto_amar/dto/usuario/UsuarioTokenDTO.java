@@ -14,6 +14,9 @@ public record UsuarioTokenDTO(
         @Schema(description = "Email do usuário", example = "joao@email.com")
         String email,
 
+        @Schema(description = "Perfil de acesso do usuário", example = "ADMINISTRADOR")
+        String tipoUsuario,
+
         @Schema(description = "Token JWT gerado",
                 example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
         String token

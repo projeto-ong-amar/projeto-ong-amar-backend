@@ -45,7 +45,7 @@ public class ProdutoController {
     @Operation(summary = "Listar produtos", description = "Retorna todos os produtos ou filtra por categoria")
     @ApiResponse(responseCode = "200", description = "Lista de produtos retornada com sucesso")
     public ResponseEntity<List<ProdutoResponseDTO>> listar(
-            @Parameter(description = "Nome da categoria para filtrar")
+            @Parameter(description = "Categoria para filtrar: ALIMENTOS ou PRODUTOS DE HIGIENE")
             @RequestParam(required = false) String categoria) {
 
         List<ProdutoResponseDTO> retorno;

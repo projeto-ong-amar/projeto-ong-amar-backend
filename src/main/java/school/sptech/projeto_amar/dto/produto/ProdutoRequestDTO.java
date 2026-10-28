@@ -2,32 +2,21 @@ package school.sptech.projeto_amar.dto.produto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-
-import java.time.LocalDate;
+import school.sptech.projeto_amar.domain.enums.Categoria;
 
 @Schema(description = "Dados para cadastro de um produto")
 public record ProdutoRequestDTO(
-
-        @Schema(description = "Nome do produto", example = "Arroz",
-                minLength = 3, maxLength = 255)
-        @NotBlank @Size(min = 3, max = 255)
+        @Schema(description = "Nome do produto", example = "Arroz", minLength = 3, maxLength = 45)
+        @NotBlank @Size(min = 3, max = 45)
         String nome,
 
-        @Schema(description = "Unidade de medida do produto", example = "kg",
-                maxLength = 255)
-        @NotBlank @Size(max = 255)
+        @Schema(description = "Unidade de medida do produto", example = "kg", maxLength = 45)
+        @Size(max = 45)
         String unidadeMedida,
 
-        @Schema(description = "ID da categoria associada", example = "1")
-        @NotNull @Positive
-        Integer fkCategoria,
-
-        @Schema(description = "Data em que o produto foi cadastrado. Se não informada, assume a data atual.",
-                example = "2026-01-15")
-        LocalDate dataCadastro
-
+        @Schema(description = "Categoria fixa do produto", example = "ALIMENTOS",
+                allowableValues = {"ALIMENTOS", "PRODUTOS DE HIGIENE"})
+        Categoria categoria
 ) {
 }

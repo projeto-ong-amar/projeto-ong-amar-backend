@@ -1,16 +1,14 @@
 package school.sptech.projeto_amar.service;
 
 import org.springframework.stereotype.Service;
-import school.sptech.projeto_amar.domain.Categoria;
+import school.sptech.projeto_amar.domain.enums.Categoria;
 import school.sptech.projeto_amar.domain.Produto;
 import school.sptech.projeto_amar.exception.categoriaExceptions.CategoriaNaoEncontradaException;
 import school.sptech.projeto_amar.exception.produtoExceptions.ExisteProdutoByNomeException;
 import school.sptech.projeto_amar.exception.produtoExceptions.ProdutoNaoEncontradoException;
 import school.sptech.projeto_amar.exception.produtoExceptions.SemProdutosCadastradosException;
-import school.sptech.projeto_amar.repository.CategoriaRepository;
 import school.sptech.projeto_amar.repository.ProdutoRepository;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -19,11 +17,8 @@ public class ProdutoService {
     private static final String STATUS_INATIVO = "INATIVO";
 
     private final ProdutoRepository repository;
-    private final CategoriaRepository categoriaRepository;
-
-    public ProdutoService(ProdutoRepository repository, CategoriaRepository categoriaRepository) {
+    public ProdutoService(ProdutoRepository repository) {
         this.repository = repository;
-        this.categoriaRepository = categoriaRepository;
     }
 
     public Produto cadastrar(Produto p) {
@@ -31,14 +26,7 @@ public class ProdutoService {
             throw new ExisteProdutoByNomeException();
         }
 
-        Categoria categoria = categoriaRepository.findById(p.getCategoria().getId())
-                .orElseThrow(() -> new CategoriaNaoEncontradaException(p.getCategoria().getId()));
-        p.setCategoria(categoria);
         p.setStatus(STATUS_ATIVO);
-
-        if (p.getDataCadastro() == null) {
-            p.setDataCadastro(LocalDate.now());
-        }
 
         return repository.save(p);
     }
@@ -53,11 +41,14 @@ public class ProdutoService {
     }
 
     public List<Produto> listarPorCategoria(String categoria) {
-        if (!categoriaRepository.existsByNome(categoria)) {
+        Categoria tipo;
+        try {
+            tipo = Categoria.fromValor(categoria);
+        } catch (IllegalArgumentException ex) {
             throw new CategoriaNaoEncontradaException();
         }
 
-        List<Produto> retorno = repository.findAllByCategoriaNomeAndStatus(categoria, STATUS_ATIVO);
+        List<Produto> retorno = repository.findAllByCategoriaAndStatus(tipo, STATUS_ATIVO);
         if (retorno.isEmpty()) {
             throw new SemProdutosCadastradosException();
         }
@@ -72,15 +63,9 @@ public class ProdutoService {
             throw new ProdutoNaoEncontradoException();
         }
 
-        Categoria categoria = categoriaRepository.findById(p.getCategoria().getId())
-                .orElseThrow(() -> new CategoriaNaoEncontradaException(p.getCategoria().getId()));
-
         produtoExistente.setNome(p.getNome());
         produtoExistente.setUnidadeMedida(p.getUnidadeMedida());
-        produtoExistente.setCategoria(categoria);
-        if (p.getDataCadastro() != null) {
-            produtoExistente.setDataCadastro(p.getDataCadastro());
-        }
+        produtoExistente.setCategoria(p.getCategoria());
 
         return repository.save(produtoExistente);
     }

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -53,6 +54,9 @@ class MovimentacaoServiceTest {
 
     @Mock
     private MovimentacaoEstoqueRepository movimentacaoEstoqueRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private Produto produto;
     private Usuario usuario;

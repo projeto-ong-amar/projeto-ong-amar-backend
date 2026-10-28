@@ -8,6 +8,7 @@ public class ProdutoLoteMapping {
     return new AlimentoRiscoVencimentoResponseDTO(
         lote.getId(),
         lote.getProduto().getNome(),
+        lote.getProduto().getCategoria() == null ? null : lote.getProduto().getCategoria().getNome(),
         lote.getQuantidade(),
         lote.getValidade());
   }

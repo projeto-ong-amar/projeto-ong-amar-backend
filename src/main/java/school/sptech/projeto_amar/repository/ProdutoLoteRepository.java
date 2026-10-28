@@ -16,6 +16,39 @@ public interface ProdutoLoteRepository extends JpaRepository<ProdutoLote, Intege
   Integer sumQuantidadeTotal();
 
   @Query("""
+      SELECT COALESCE(SUM(l.quantidade), 0)
+      FROM ProdutoLote l
+      WHERE l.produto.status = 'ATIVO'
+        AND l.quantidade > 0
+        AND l.validade BETWEEN :inicio AND :fim
+      """)
+  Long sumUnidadesComVencimentoNoPeriodo(@Param("inicio") LocalDate inicio,
+      @Param("fim") LocalDate fim);
+
+  @Query("""
+      SELECT COALESCE(SUM(l.quantidade), 0)
+      FROM ProdutoLote l
+      WHERE l.produto.status = 'ATIVO'
+        AND l.quantidade > 0
+        AND (SELECT COALESCE(SUM(s.quantidade), 0)
+             FROM ProdutoLote s WHERE s.produto = l.produto) < :limite
+      """)
+  Long sumUnidadesComEstoqueBaixo(@Param("limite") Integer limite);
+
+  @Query("""
+      SELECT COALESCE(SUM(l.quantidade), 0)
+      FROM ProdutoLote l
+      WHERE l.produto.status = 'ATIVO'
+        AND l.quantidade > 0
+        AND NOT EXISTS (
+          SELECT m.id FROM Movimentacao m
+          WHERE m.produto = l.produto AND m.data BETWEEN :inicio AND :fim
+        )
+      """)
+  Long sumUnidadesSemMovimentacaoNoPeriodo(@Param("inicio") LocalDate inicio,
+      @Param("fim") LocalDate fim);
+
+  @Query("""
       SELECT COUNT(p)
       FROM ProdutoLote p
       WHERE p.validade IS NOT NULL
@@ -46,18 +79,26 @@ public interface ProdutoLoteRepository extends JpaRepository<ProdutoLote, Intege
       @Param("dataFim") LocalDate dataFim);
 
   @Query("""
-      SELECT p.produto.categoria.nome, COALESCE(SUM(p.quantidade), 0)
+      SELECT p.produto.categoria, COALESCE(SUM(p.quantidade), 0)
       FROM ProdutoLote p
       WHERE p.quantidade > 0
-      GROUP BY p.produto.categoria.nome
-      ORDER BY p.produto.categoria.nome
+      GROUP BY p.produto.categoria
+      ORDER BY p.produto.categoria
       """)
   List<Object[]> sumEstoquePorTipo();
+
+  @Query("""
+      SELECT p.produto.id, COALESCE(SUM(p.quantidade), 0)
+      FROM ProdutoLote p
+      GROUP BY p.produto.id
+      """)
+  List<Object[]> sumQuantidadePorProduto();
 
   @Query("""
       SELECT p
       FROM ProdutoLote p
       WHERE p.quantidade > 0
+        AND p.produto.status = 'ATIVO'
         AND p.validade IS NOT NULL
         AND p.validade >= :dataInicio
         AND p.validade <= :dataFim

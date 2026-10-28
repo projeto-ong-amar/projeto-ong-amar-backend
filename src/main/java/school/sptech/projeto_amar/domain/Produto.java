@@ -2,7 +2,7 @@ package school.sptech.projeto_amar.domain;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
+import school.sptech.projeto_amar.domain.enums.Categoria;
 
 @Entity
 public class Produto {
@@ -10,15 +10,16 @@ public class Produto {
     @Id
     private Integer id;
 
+    @Column(nullable = false, length = 45)
     private String nome;
+    @Column(length = 45)
     private String unidadeMedida;
 
+    @Column(nullable = false, length = 45)
     private String status;
 
-    private LocalDate dataCadastro;
-
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "fk_categoria", nullable = false)
+    @Convert(converter = CategoriaConverter.class)
+    @Column(columnDefinition = "ENUM('ALIMENTOS', 'PRODUTOS DE HIGIENE')")
     private Categoria categoria;
 
     public Integer getId() {
@@ -51,14 +52,6 @@ public class Produto {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public LocalDate getDataCadastro() {
-        return dataCadastro;
-    }
-
-    public void setDataCadastro(LocalDate dataCadastro) {
-        this.dataCadastro = dataCadastro;
     }
 
     public Categoria getCategoria() {

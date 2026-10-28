@@ -23,6 +23,8 @@ public interface MovimentacaoRepository extends JpaRepository<Movimentacao, Inte
 
     Long countByTipo(TipoMovimentacao tipo);
 
+    Long countByTipoAndDataBetween(TipoMovimentacao tipo, LocalDate inicio, LocalDate fim);
+
     Page<Movimentacao> findByTipoOrderByDataDesc(TipoMovimentacao tipo, Pageable pageable);
 
     Page<Movimentacao> findByTipoInOrderByDataDesc(List<TipoMovimentacao> tipos, Pageable pageable);
