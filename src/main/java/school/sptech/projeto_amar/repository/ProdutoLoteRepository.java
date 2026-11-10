@@ -66,15 +66,16 @@ public interface ProdutoLoteRepository extends JpaRepository<ProdutoLote, Intege
       """)
   Long countLotesProximosDoVencimento(@Param("hoje") LocalDate hoje, @Param("limite") LocalDate limite);
 
-  @Query(value = """
-      SELECT COUNT(*)
-      FROM produto_lote
-      WHERE quantidade > 0
-        AND validade IS NOT NULL
-        AND validade >= :dataInicio
-        AND validade <= :dataFim
-      """, nativeQuery = true)
-  Integer countAlimentosComRiscoDeVencimento(
+  @Query("""
+      SELECT COUNT(p)
+      FROM ProdutoLote p
+      WHERE p.quantidade > 0
+        AND p.produto.status = 'ATIVO'
+        AND p.validade IS NOT NULL
+        AND p.validade >= :dataInicio
+        AND p.validade <= :dataFim
+      """)
+  Long countAlimentosComRiscoDeVencimento(
       @Param("dataInicio") LocalDate dataInicio,
       @Param("dataFim") LocalDate dataFim);
 

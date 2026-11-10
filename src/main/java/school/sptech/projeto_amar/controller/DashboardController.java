@@ -99,18 +99,13 @@ public class DashboardController {
   }
 
   @GetMapping("/kpi-risco-vencimento")
-  @Operation(summary = "KPI de itens com risco de vencimento", description = "Retorna a quantidade de lotes com risco de vencimento considerando o intervalo de 30 dias que termina na data da próxima doação. Requer autenticação")
+  @Operation(summary = "KPI de itens com risco de vencimento", description = "Retorna a quantidade de lotes ativos com quantidade em estoque que vencem entre hoje e hoje + dias de risco configurados, incluindo as duas datas. Usa a mesma regra da listagem /modal-kpi-risco-vencimento. Requer autenticação")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "Indicador retornado com sucesso"),
-      @ApiResponse(responseCode = "400", description = "Dados inválidos"),
       @ApiResponse(responseCode = "401", description = "Usuário não autenticado")
   })
-  public ResponseEntity<Integer> getAlimentosComRiscoDeVencimento(
-      @Parameter(description = "Data da próxima doação (fim do período analisado)")
-      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataProximaDoacao) {
-    LocalDate dataInicio = calcDataInicio(dataProximaDoacao);
-    LocalDate dataFim = dataProximaDoacao;
-    return ResponseEntity.ok(dashboardService.getAlimentosComRiscoDeVencimento(dataInicio, dataFim));
+  public ResponseEntity<Integer> getAlimentosComRiscoDeVencimento() {
+    return ResponseEntity.ok(dashboardService.getAlimentosComRiscoDeVencimento());
   }
 
   @GetMapping("/modal-kpi-risco-vencimento")

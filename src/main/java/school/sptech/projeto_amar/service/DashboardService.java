@@ -72,12 +72,11 @@ public class DashboardService {
     return produtoLoteRepository.sumUnidadesSemMovimentacaoNoPeriodo(hoje.minusDays(59), hoje);
   }
 
-  public Integer getAlimentosComRiscoDeVencimento(LocalDate dataInicio, LocalDate dataFim) {
-    if (dataInicio.isAfter(dataFim)) {
-      throw new IllegalArgumentException("A data inicial deve ser anterior ou igual à data final");
-    }
-
-    return produtoLoteRepository.countAlimentosComRiscoDeVencimento(dataInicio, dataFim);
+  public Integer getAlimentosComRiscoDeVencimento() {
+    LocalDate hoje = LocalDate.now();
+    int diasRisco = configuracaoNotificacaoService.obterMetricas().riscoVencimentoDias();
+    return produtoLoteRepository.countAlimentosComRiscoDeVencimento(hoje, hoje.plusDays(diasRisco))
+        .intValue();
   }
 
   public Integer getDoacoesRecebidas(LocalDate dataInicio, LocalDate dataFim) {
