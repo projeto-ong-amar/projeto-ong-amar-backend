@@ -119,6 +119,13 @@ public class PdfService {
                 subtitulo.setAlignment(Element.ALIGN_LEFT);
                 subtitulo.setSpacingAfter(14f);
                 document.add(subtitulo);
+
+                if (relatorio.periodo() != null && !relatorio.periodo().isBlank()) {
+                        Paragraph periodo = new Paragraph("Período: " + relatorio.periodo(), SUBTITULO);
+                        periodo.setAlignment(Element.ALIGN_LEFT);
+                        periodo.setSpacingAfter(12f);
+                        document.add(periodo);
+                }
         }
 
         private void adicionarCardsResumo(Document document, RelatorioAssistenteDTO relatorio)

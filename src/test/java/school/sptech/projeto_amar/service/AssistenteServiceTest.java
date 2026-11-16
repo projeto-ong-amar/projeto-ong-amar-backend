@@ -11,6 +11,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.web.server.ResponseStatusException;
 import school.sptech.projeto_amar.domain.enums.Categoria;
 import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.domain.Produto;
@@ -37,6 +38,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -175,15 +177,36 @@ class AssistenteServiceTest {
     }
 
     @Test
-    @DisplayName("gerarRelatorioHistoricoProdutosCadastrados: deve lançar excecao para erro nao relacionado a quota")
-    void deveLancarErroAoChamarIaQuandoNaoForQuota() {
+    @DisplayName("gerarRelatorioHistoricoProdutosCadastrados: deve lançar excecao para falha nao transitoria")
+    void deveLancarErroAoChamarIaQuandoNaoForFalhaTemporaria() {
         mockProdutosCadastradosBasico();
 
-        when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("timeout de rede"));
+        when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("configuracao invalida da IA"));
 
         assertThrows(
                 ErroAoChamarIaException.class,
                 () -> service.gerarRelatorioHistoricoProdutosCadastrados("Liste os produtos"));
+    }
+
+    @Test
+    @DisplayName("gerarRelatorioProdutosCadastradosParaPdf: deve usar fallback quando a IA excede o tempo limite")
+    void deveUsarFallbackQuandoIaExcedeTempoLimite() {
+        mockProdutosCadastradosBasico();
+
+        when(chatModel.call(any(Prompt.class))).thenThrow(new RuntimeException("timeout de rede"));
+        when(assistenteFallbackService.gerarRelatorioContingenciaEstruturado(
+                anyString(), anyString(), anyString()))
+                .thenReturn(new RelatorioIaResponseDTO(
+                        "Relatorio de contingencia.",
+                        "media",
+                        List.of("AVISO: relatorio sem IA."),
+                        List.of("Tentar novamente mais tarde."),
+                        null));
+
+        RelatorioAssistenteDTO resultado = service.gerarRelatorioProdutosCadastradosParaPdf("Liste os produtos");
+
+        assertEquals("produtos-cadastrados", resultado.tipo());
+        assertTrue(resultado.response().get(0).toLowerCase().contains("aviso"));
     }
 
     @Test
@@ -335,6 +358,83 @@ class AssistenteServiceTest {
 
         assertEquals(List.of("ID", "Nome", "Categoria", "Unidade", "Status"), tabelaProdutos.colunas());
         assertEquals(List.of("1", "Arroz", "Alimentos", "kg", "ATIVO"), tabelaProdutos.linhas().get(0));
+    }
+
+    @Test
+    @DisplayName("gerarRelatorioHistoricoEntradasParaPdf: deve filtrar entradas pelo periodo informado")
+    void deveFiltrarEntradasPeloPeriodo() {
+        LocalDate inicio = LocalDate.of(2026, 4, 1);
+        LocalDate fim = LocalDate.of(2026, 4, 30);
+
+        when(movimentacaoRepository.findTop20ByTipoAndDataBetweenOrderByDataDescIdDesc(
+                TipoMovimentacao.ENTRADA, inicio, fim)).thenReturn(List.of(movimentacaoEntrada));
+        when(movimentacaoRepository.countByTipoAndDataBetween(TipoMovimentacao.ENTRADA, inicio, fim))
+                .thenReturn(1L);
+        when(movimentacaoRepository.sumQuantidadeByTipoAndPeriodo(TipoMovimentacao.ENTRADA, inicio, fim))
+                .thenReturn(10);
+
+        mockIaResposta("""
+                {
+                  "resumo_executivo": "Estoque equilibrado no periodo.",
+                  "prioridade": "baixa",
+                  "analise": ["Entrada registrada em abril."],
+                  "acoes_recomendadas": ["Manter monitoramento."]
+                }
+                """);
+        when(assistenteIaResponseValidatorService.isRespostaAderenteAosDados(
+                any(RelatorioIaResponseDTO.class), anyString())).thenReturn(true);
+        when(assistenteIaResponseValidatorService.normalizarSaidaIa(anyString()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        RelatorioAssistenteDTO resultado = service.gerarRelatorioHistoricoEntradasParaPdf(
+                "Entradas de abril", inicio, fim);
+
+        assertEquals("01/04/2026 a 30/04/2026", resultado.periodo());
+        verify(movimentacaoRepository).findTop20ByTipoAndDataBetweenOrderByDataDescIdDesc(
+                TipoMovimentacao.ENTRADA, inicio, fim);
+        verify(movimentacaoRepository).countByTipoAndDataBetween(TipoMovimentacao.ENTRADA, inicio, fim);
+        verify(movimentacaoRepository).sumQuantidadeByTipoAndPeriodo(TipoMovimentacao.ENTRADA, inicio, fim);
+        verify(movimentacaoRepository, never()).findTop20ByTipoOrderByDataDescIdDesc(any());
+    }
+
+    @Test
+    @DisplayName("gerarRelatorioHistoricoEntradasParaPdf: deve rejeitar periodo incompleto ou invertido")
+    void deveRejeitarPeriodoInvalido() {
+        LocalDate inicio = LocalDate.of(2026, 4, 1);
+        LocalDate fim = LocalDate.of(2026, 4, 30);
+
+        assertThrows(ResponseStatusException.class,
+                () -> service.gerarRelatorioHistoricoEntradasParaPdf("Entradas", inicio, null));
+        assertThrows(ResponseStatusException.class,
+                () -> service.gerarRelatorioHistoricoEntradasParaPdf("Entradas", fim, inicio));
+
+        verifyNoInteractions(movimentacaoRepository);
+    }
+
+    @Test
+    @DisplayName("gerarRelatorioProdutosCadastradosParaPdf: deve avisar que periodo nao se aplica")
+    void deveAvisarQuePeriodoNaoSeAplicaAProdutos() {
+        mockProdutosCadastradosBasico();
+
+        mockIaResposta("""
+                {
+                  "resumo_executivo": "Produtos cadastrados listados.",
+                  "prioridade": "baixa",
+                  "analise": ["Todos os produtos foram considerados."],
+                  "acoes_recomendadas": ["Revisar categorias."]
+                }
+                """);
+        when(assistenteIaResponseValidatorService.isRespostaAderenteAosDados(
+                any(RelatorioIaResponseDTO.class), anyString())).thenReturn(true);
+        when(assistenteIaResponseValidatorService.normalizarSaidaIa(anyString()))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        RelatorioAssistenteDTO resultado = service.gerarRelatorioProdutosCadastradosParaPdf(
+                "Produtos", LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30));
+
+        assertEquals("produtos-cadastrados", resultado.tipo());
+        assertTrue(resultado.periodo().contains("produtos"));
+        verifyNoInteractions(movimentacaoRepository);
     }
 
     private void mockHistoricoEntradasBasico() {

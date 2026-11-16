@@ -50,12 +50,12 @@ public class AssistenteFallbackService {
 
   public RelatorioIaResponseDTO gerarRelatorioContingenciaEstruturado(String tipoRelatorio, String pergunta, String dados) {
     List<String> analise = new ArrayList<>();
-    analise.add("AVISO: Este relatório não foi gerado por IA. Modo contingência ativado por limite temporário de cota da API de IA.");
+    analise.add("AVISO: Este relatório não foi gerado por IA. Modo contingência ativado por limite temporário de cota ou indisponibilidade da API de IA.");
     analise.addAll(extrairLinhasResumoDosDados(dados));
 
     List<String> acoes = List.of(
         "Validar os indicadores consolidados deste relatório com o time responsável.",
-        "Tentar novamente a geração com IA quando a cota da API estiver disponível.");
+        "Tentar novamente a geração com IA quando a API de IA estiver disponível.");
 
     String resumo = "Relatório gerado em modo contingência (sem IA) para " + tipoRelatorio
         + ", com dados consolidados diretamente do banco.";
