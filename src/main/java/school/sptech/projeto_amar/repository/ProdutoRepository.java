@@ -9,6 +9,8 @@ import java.util.List;
 public interface ProdutoRepository extends JpaRepository<Produto, Integer> {
     Boolean existsByNomeAndStatus(String nome, String status);
 
+    Boolean existsByNomeAndStatusAndIdNot(String nome, String status, Integer id);
+
     Long countByStatus(String status);
 
     List<Produto> findTop30ByOrderByIdDesc();
