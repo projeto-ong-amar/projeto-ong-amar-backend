@@ -6,6 +6,9 @@ import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 @Schema(description = "Dados de retorno de um usuário")
 public record UsuarioResponseDTO(
 
+        @Schema(description = "Identificador do usuário", example = "1")
+        Integer id,
+
         @Schema(description = "Nome completo do usuário", example = "João Silva")
         String nome,
 
