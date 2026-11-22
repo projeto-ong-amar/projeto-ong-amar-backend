@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record UsuarioSessaoDTO(
 
         @Schema(description = "ID do usuário autenticado", example = "1")
-        Integer userId,
+        Integer id,
 
         @Schema(description = "Nome do usuário autenticado", example = "João Silva")
         String nome,
