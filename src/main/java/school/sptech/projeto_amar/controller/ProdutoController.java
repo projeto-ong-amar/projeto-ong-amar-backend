@@ -33,6 +33,7 @@ public class ProdutoController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Produto cadastrado com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "409", description = "Já existe um produto ativo com esse nome"),
             @ApiResponse(responseCode = "403", description = "Acesso negado")
     })
     @PreAuthorize("hasRole('ADMINISTRADOR')")
@@ -63,6 +64,7 @@ public class ProdutoController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Produto atualizado com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "409", description = "Já existe outro produto ativo com esse nome"),
             @ApiResponse(responseCode = "403", description = "Acesso negado"),
             @ApiResponse(responseCode = "404", description = "Produto não encontrado")
     })

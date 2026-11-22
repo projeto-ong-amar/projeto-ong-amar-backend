@@ -146,6 +146,24 @@ class ProdutoServiceTest {
     class Atualizar {
 
         @Test
+        @DisplayName("Deve rejeitar nome de outro produto ativo antes de alterar dados")
+        void deveRejeitarNomeDuplicadoSemAlterarProduto() {
+            when(repository.findById(1)).thenReturn(Optional.of(produto));
+            when(repository.existsByNomeAndStatusAndIdNot("Feijão", "ATIVO", 1)).thenReturn(true);
+
+            Produto novosDados = new Produto();
+            novosDados.setNome("Feijão");
+            novosDados.setUnidadeMedida("UN");
+            novosDados.setCategoria(Categoria.PRODUTOS_DE_HIGIENE);
+
+            assertThrows(ExisteProdutoByNomeException.class, () -> service.atualizar(1, novosDados));
+            assertEquals("Arroz", produto.getNome());
+            assertEquals("kg", produto.getUnidadeMedida());
+            assertEquals(Categoria.ALIMENTOS, produto.getCategoria());
+            verify(repository, never()).save(any());
+        }
+
+        @Test
         @DisplayName("Deve atualizar produto ATIVO existente")
         void deveAtualizarComSucesso() {
             when(repository.findById(1)).thenReturn(Optional.of(produto));

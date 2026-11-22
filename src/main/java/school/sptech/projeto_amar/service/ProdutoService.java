@@ -63,6 +63,10 @@ public class ProdutoService {
             throw new ProdutoNaoEncontradoException();
         }
 
+        if (repository.existsByNomeAndStatusAndIdNot(p.getNome(), STATUS_ATIVO, id)) {
+            throw new ExisteProdutoByNomeException();
+        }
+
         produtoExistente.setNome(p.getNome());
         produtoExistente.setUnidadeMedida(p.getUnidadeMedida());
         produtoExistente.setCategoria(p.getCategoria());
