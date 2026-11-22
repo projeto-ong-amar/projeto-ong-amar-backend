@@ -59,7 +59,7 @@ class ProdutoNomeIntegrationTest {
                 .cookie(autenticacao, csrf).header("X-XSRF-TOKEN", csrf.getValue())
                 .contentType(MediaType.APPLICATION_JSON).content(corpo(outro.getNome())))
                 .andExpect(status().isConflict())
-                .andExpect(status().reason("Já existe um produto com esse nome!"));
+                .andExpect(jsonPath("$.message").value("Já existe um produto com esse nome!"));
 
         Produto salvo = repository.findById(original.getId()).orElseThrow();
         assertEquals(original.getNome(), salvo.getNome());

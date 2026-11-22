@@ -83,6 +83,32 @@ O campo legado `fkUsuario` é opcional, está depreciado no Swagger e é ignorad
 em ambos os casos. O front-end pode removê-lo dos corpos das requisições.
 As regras atuais de acesso às movimentações não foram alteradas.
 
+## Respostas de erro (BUG-11)
+
+Erros tratados pela API retornam o status HTTP original, uma mensagem segura em
+`message` e uma lista `erros` (vazia quando não há validação por campo):
+
+```json
+{
+  "status": 400,
+  "message": "Confira os campos informados",
+  "erros": [{"campo": "nome", "mensagem": "O campo é obrigatório"}]
+}
+```
+
+O front-end pode exibir `erros[].mensagem` junto aos campos e usar `message` como
+resumo. JSON malformado, números fora do intervalo, datas e tipos inválidos
+retornam `400` com orientação genérica, sem repetir o conteúdo recebido.
+Mensagens e status das exceções de negócio são preservados (por exemplo, nome
+duplicado retorna `409`). Erros inesperados retornam `500` com mensagem genérica.
+Respostas já produzidas pelos controllers e filtros de segurança mantêm seus
+contratos, como `mensagem` no login e na troca de senha.
+
+Stack traces, classes de exceção e valores rejeitados não são enviados.
+O fallback do servidor em `/error` também omite trace, exceção, mensagem interna
+e erros de binding, mesmo com `?trace=true` ou DevTools. Não habilite essas
+opções por variáveis de ambiente ou configurações específicas de perfil.
+
 ## Quick Start
 
 ### Pre-requisitos
