@@ -2,6 +2,7 @@ package school.sptech.projeto_amar;
 
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,19 +82,39 @@ class ResponsavelMovimentacaoIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("tiposEPerfis")
-    void edicaoPreservaResponsavelOriginal(TipoMovimentacao tipo, TipoUsuario perfil) throws Exception {
+    @DisplayName("BUG-06: alterar dados com outro usuário preserva o autor na resposta, banco e histórico")
+    void edicaoDeDadosPreservaResponsavelOriginalNoHistorico(TipoMovimentacao tipo, TipoUsuario perfil) throws Exception {
         criarMovimentacao(tipo, outroUsuario, "");
         var original = movimentacaoRepository.findByTipoAndProdutoId(tipo, produto.getId()).getFirst();
         Usuario editor = criarUsuario(perfil);
+        int quantidade = original.getQuantidade();
         for (String campo : List.of(",\"fkUsuario\":" + editor.getId(),
                 ",\"fkUsuario\":2147483647", "", ",\"fkUsuario\":null")) {
+            quantidade++;
+            String motivo = "Motivo alterado " + quantidade;
             mockMvc.perform(put(rota(tipo) + "/" + original.getId())
                     .cookie(autenticar(editor), csrf).header("X-XSRF-TOKEN", csrf.getValue())
-                    .contentType(MediaType.APPLICATION_JSON).content(corpo(tipo, campo)))
+                    .contentType(MediaType.APPLICATION_JSON).content(corpo(tipo, campo, quantidade, motivo)))
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.quantidade").value(quantidade))
+                    .andExpect(jsonPath("$.motivo").value(motivo))
                     .andExpect(jsonPath("$.usuario.nome").value(outroUsuario.getNome()));
-            assertEquals(outroUsuario.getId(), movimentacaoRepository.findById(original.getId())
-                    .orElseThrow().getUsuario().getId());
+            var salva = movimentacaoRepository.findById(original.getId()).orElseThrow();
+            assertEquals(quantidade, salva.getQuantidade());
+            assertEquals(motivo, salva.getMotivo());
+            assertEquals(outroUsuario.getId(), salva.getUsuario().getId());
+
+            String historico = tipo == TipoMovimentacao.ENTRADA ? "entrada" : "saida";
+            String registro = "$.content[?(@.id == " + original.getId() + ")]";
+            mockMvc.perform(get("/movimentacao/" + historico + "/historico")
+                    .param("size", "1000").cookie(autenticar(editor)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(registro + ".responsavelNome")
+                            .value(org.hamcrest.Matchers.contains(outroUsuario.getNome())))
+                    .andExpect(jsonPath(registro + ".quantidade")
+                            .value(org.hamcrest.Matchers.contains(quantidade)))
+                    .andExpect(jsonPath(registro + ".motivo")
+                            .value(org.hamcrest.Matchers.contains(motivo)));
         }
     }
 
@@ -124,15 +145,19 @@ class ResponsavelMovimentacaoIntegrationTest {
     }
 
     private String corpo(TipoMovimentacao tipo, String campo) {
+        return corpo(tipo, campo, 2, "Teste responsavel");
+    }
+
+    private String corpo(TipoMovimentacao tipo, String campo, int quantidade, String motivo) {
         String data = switch (tipo) {
             case ENTRADA -> "dataEntrada";
             case SAIDA -> "dataSaida";
             case PERDA -> "dataPerda";
         };
         return """
-                {"quantidade":2,"%s":"%s","dataValidade":"%s","motivo":"Teste responsavel",
+                {"quantidade":%d,"%s":"%s","dataValidade":"%s","motivo":"%s",
                  "fkProduto":%d,"fkLote":%d%s}
-                """.formatted(data, LocalDate.now(), LocalDate.now().plusMonths(6),
+                """.formatted(quantidade, data, LocalDate.now(), LocalDate.now().plusMonths(6), motivo,
                 produto.getId(), lote.getId(), campo);
     }
 
