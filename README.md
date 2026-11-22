@@ -36,6 +36,25 @@ Gerenciamento de estoque completo para uma ONG, com controle de lotes, rotativid
 | **Documentacao Swagger** | API documentada com OpenAPI 3, acessivel em `/swagger-ui` |
 | **Validacao Multi-Camada** | Respostas da IA sao validadas contra os dados reais antes de serem retornadas |
 
+## Alteração de senha (BUG-03)
+
+- Login e `GET /usuarios/me` retornam o identificador no campo `id` (não `userId`).
+- Administradores e voluntários alteram a própria senha via `PATCH /usuarios/me/senha`:
+
+```json
+{"senhaAtual":"Senha@123","novaSenha":"NovaSenha@1"}
+```
+
+Envie o cookie de autenticação e, com CSRF habilitado, o cookie `XSRF-TOKEN` e o header
+`X-XSRF-TOKEN` obtidos em `GET /csrf`. A nova senha deve ter de 8 a 25 caracteres,
+incluindo maiúscula, minúscula, número e caractere especial dentre `@$!%*?&`.
+Senha atual incorreta ou dados inválidos retornam `400`; sucesso retorna `204` e
+invalida todas as sessões e tokens de recuperação da conta. Faça login novamente.
+
+`PUT /usuarios/{id}` continua restrito a administradores, mas não altera senhas:
+omita o campo `senha` (um valor não nulo é rejeitado com `400`).
+O fluxo de recuperação por e-mail continua disponível para quem esqueceu a senha.
+
 ## Quick Start
 
 ### Pre-requisitos
