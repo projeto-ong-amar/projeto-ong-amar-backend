@@ -55,6 +55,19 @@ invalida todas as sessões e tokens de recuperação da conta. Faça login novam
 omita o campo `senha` (um valor não nulo é rejeitado com `400`).
 O fluxo de recuperação por e-mail continua disponível para quem esqueceu a senha.
 
+## Datas das movimentações (BUG-09)
+
+Os POSTs e PUTs de `/movimentacao/entrada` e `/movimentacao/saida` retornam
+**400** se `dataEntrada` ou `dataSaida` for futura, nula ou inválida.
+As datas são obrigatórias e comparadas com o dia atual do servidor.
+Na entrada, `dataValidade` continua opcional, mas, quando informada, deve ser
+igual ou posterior a `dataEntrada`. Entradas históricas podem ter validade
+no passado, desde que respeitem essa relação.
+
+O consumidor deve corrigir datas inconsistentes antes de reenviar. Requisições
+rejeitadas não alteram movimentações nem estoque. Não há correção automática
+de registros antigos; ao editá-los, envie datas válidas.
+
 ## Responsável das movimentações (BUG-05 e BUG-06)
 
 Nos POSTs de `/movimentacao/entrada`, `/movimentacao/saida` e

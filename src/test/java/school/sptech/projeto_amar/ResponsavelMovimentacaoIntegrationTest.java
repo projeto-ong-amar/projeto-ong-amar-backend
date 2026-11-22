@@ -187,6 +187,73 @@ class ResponsavelMovimentacaoIntegrationTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("entradasSaidasEPerfis")
+    @DisplayName("BUG-09: datas inválidas em POST e PUT não alteram movimentação nem estoque")
+    void datasInvalidasNaoAlteramPersistencia(TipoMovimentacao tipo, TipoUsuario perfil) throws Exception {
+        Usuario usuario = criarUsuario(perfil);
+        criarMovimentacao(tipo, outroUsuario, "");
+        var original = movimentacaoRepository.findByTipoAndProdutoId(tipo, produto.getId()).getFirst();
+        var lotesAntes = loteRepository.findByProdutoIdAndQuantidadeGreaterThanOrderByValidadeAsc(produto.getId(), 0);
+        long totalMovimentacoes = movimentacaoRepository.count();
+        for (String data : List.of("\"" + LocalDate.now().plusDays(1) + "\"", "null", "\"data-invalida\"")) {
+            String campo = tipo == TipoMovimentacao.ENTRADA ? "dataEntrada" : "dataSaida";
+            String corpo = corpo(tipo, "", 7, "Data invalida")
+                    .replace("\"" + campo + "\":\"" + LocalDate.now() + "\"", "\"" + campo + "\":" + data);
+            rejeitarCriacaoEEdicao(tipo, usuario, original.getId(), corpo);
+        }
+        if (tipo == TipoMovimentacao.ENTRADA) {
+            String corpo = corpo(tipo, "", 7, "Validade invalida")
+                    .replace(LocalDate.now().plusMonths(6).toString(), LocalDate.now().minusDays(1).toString());
+            rejeitarCriacaoEEdicao(tipo, usuario, original.getId(), corpo);
+        }
+        var salva = movimentacaoRepository.findById(original.getId()).orElseThrow();
+        assertEquals(original.getData(), salva.getData());
+        assertEquals(original.getQuantidade(), salva.getQuantidade());
+        assertEquals(original.getMotivo(), salva.getMotivo());
+        assertEquals(outroUsuario.getId(), salva.getUsuario().getId());
+        assertEquals(totalMovimentacoes, movimentacaoRepository.count());
+        var lotesDepois = loteRepository.findByProdutoIdAndQuantidadeGreaterThanOrderByValidadeAsc(produto.getId(), 0);
+        assertEquals(lotesAntes.size(), lotesDepois.size());
+        for (ProdutoLote antes : lotesAntes) {
+            var depois = loteRepository.findById(antes.getId()).orElseThrow();
+            assertEquals(antes.getQuantidade(), depois.getQuantidade());
+            assertEquals(antes.getDataEntrada(), depois.getDataEntrada());
+            assertEquals(antes.getValidade(), depois.getValidade());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("entradasSaidasEPerfis")
+    @DisplayName("BUG-09: hoje e passado são aceitos, com validade opcional ou igual à entrada")
+    void datasConsistentesSaoAceitas(TipoMovimentacao tipo, TipoUsuario perfil) throws Exception {
+        Usuario usuario = criarUsuario(perfil);
+        for (LocalDate data : List.of(LocalDate.now(), LocalDate.now().minusDays(10))) {
+            for (String validade : List.of("null", "\"" + data + "\"")) {
+                String corpo = corpo(tipo, "", 3, "Data consistente", data)
+                        .replace("\"" + LocalDate.now().plusMonths(6) + "\"", validade);
+                mockMvc.perform(post(rota(tipo)).cookie(autenticar(usuario), csrf)
+                        .header("X-XSRF-TOKEN", csrf.getValue()).contentType(MediaType.APPLICATION_JSON).content(corpo))
+                        .andExpect(status().isCreated())
+                        .andExpect(jsonPath("$.data").value(data.toString()));
+                var original = movimentacaoRepository.findByTipoAndProdutoId(tipo, produto.getId()).stream()
+                        .max(java.util.Comparator.comparing(Movimentacao::getId)).orElseThrow();
+                mockMvc.perform(put(rota(tipo) + "/" + original.getId()).cookie(autenticar(usuario), csrf)
+                        .header("X-XSRF-TOKEN", csrf.getValue()).contentType(MediaType.APPLICATION_JSON).content(corpo))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data").value(data.toString()));
+            }
+        }
+    }
+
+    private void rejeitarCriacaoEEdicao(TipoMovimentacao tipo, Usuario usuario, Integer id, String corpo) throws Exception {
+        for (var request : List.of(post(rota(tipo)), put(rota(tipo) + "/" + id))) {
+            mockMvc.perform(request.cookie(autenticar(usuario), csrf)
+                    .header("X-XSRF-TOKEN", csrf.getValue()).contentType(MediaType.APPLICATION_JSON).content(corpo))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
     private void criarMovimentacao(TipoMovimentacao tipo, Usuario usuario, String campo) throws Exception {
         mockMvc.perform(post(rota(tipo)).cookie(autenticar(usuario), csrf)
                 .header("X-XSRF-TOKEN", csrf.getValue()).contentType(MediaType.APPLICATION_JSON)
