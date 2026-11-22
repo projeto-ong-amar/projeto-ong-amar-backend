@@ -22,7 +22,9 @@ import school.sptech.projeto_amar.dto.movimentacao.MovimentacaoResponseDTO;
 import school.sptech.projeto_amar.mapper.MovimentacaoMapping;
 import school.sptech.projeto_amar.service.MovimentacaoService;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -101,8 +103,10 @@ public class MovimentacaoController {
     public ResponseEntity<Page<MovimentacaoHistoricoResponseDTO>> listarHistoricoEntradas(
             @Parameter(description = "Número da página (inicia em 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Quantidade de itens por página") @RequestParam(defaultValue = "10") int size) {
-        Page<MovimentacaoHistoricoResponseDTO> historico = service.listarHistoricoEntrada(PageRequest.of(page, size))
-                .map(MovimentacaoMapping::toMovimentacaoHistorico);
+        Page<Movimentacao> movimentacoes = service.listarHistoricoEntrada(PageRequest.of(page, size));
+        Map<Integer, LocalDate> validades = service.validadesPorMovimentacao(movimentacoes.getContent());
+        Page<MovimentacaoHistoricoResponseDTO> historico = movimentacoes
+                .map(m -> MovimentacaoMapping.toMovimentacaoHistorico(m, validades.get(m.getId())));
         return ResponseEntity.ok(historico);
     }
 
@@ -116,7 +120,7 @@ public class MovimentacaoController {
             @Parameter(description = "Número da página (inicia em 0)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Quantidade de itens por página") @RequestParam(defaultValue = "10") int size) {
         Page<MovimentacaoHistoricoResponseDTO> historico = service.listarHistoricoSaida(PageRequest.of(page, size))
-                .map(MovimentacaoMapping::toMovimentacaoHistorico);
+                .map(m -> MovimentacaoMapping.toMovimentacaoHistorico(m, null));
         return ResponseEntity.ok(historico);
     }
 

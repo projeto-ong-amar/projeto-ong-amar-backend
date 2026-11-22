@@ -170,6 +170,42 @@ class ResponsavelMovimentacaoIntegrationTest {
     }
 
     @ParameterizedTest
+    @MethodSource("entradasSaidasEPerfis")
+    @DisplayName("BUG-08: histórico de entrada expõe a validade do lote; saída continua sem validade")
+    void historicoExpoeValidadeDaEntrada(TipoMovimentacao tipo, TipoUsuario perfil) throws Exception {
+        Usuario usuario = criarUsuario(perfil);
+        LocalDate validade = LocalDate.now().plusMonths(6);
+        criarMovimentacao(tipo, usuario, "");
+        var original = movimentacaoRepository.findByTipoAndProdutoId(tipo, produto.getId()).getFirst();
+        String registro = "$.content[?(@.id == " + original.getId() + ")]";
+
+        mockMvc.perform(get(rota(tipo) + "/historico").param("size", "1000").cookie(autenticar(usuario)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(registro + ".dataValidade").value(tipo == TipoMovimentacao.ENTRADA
+                        ? org.hamcrest.Matchers.contains(validade.toString())
+                        : org.hamcrest.Matchers.contains(org.hamcrest.Matchers.nullValue())));
+    }
+
+    @ParameterizedTest
+    @MethodSource("entradasSaidasEPerfis")
+    @DisplayName("BUG-08: histórico aceita entrada sem validade e devolve null")
+    void historicoDeEntradaAceitaValidadeAusente(TipoMovimentacao tipo, TipoUsuario perfil) throws Exception {
+        Usuario usuario = criarUsuario(perfil);
+        String corpo = corpo(tipo, "", 2, "Sem validade")
+                .replace("\"" + LocalDate.now().plusMonths(6) + "\"", "null");
+        mockMvc.perform(post(rota(tipo)).cookie(autenticar(usuario), csrf)
+                .header("X-XSRF-TOKEN", csrf.getValue()).contentType(MediaType.APPLICATION_JSON).content(corpo))
+                .andExpect(status().isCreated());
+
+        var original = movimentacaoRepository.findByTipoAndProdutoId(tipo, produto.getId()).getFirst();
+        String registro = "$.content[?(@.id == " + original.getId() + ")]";
+        mockMvc.perform(get(rota(tipo) + "/historico").param("size", "1000").cookie(autenticar(usuario)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(registro + ".dataValidade")
+                        .value(org.hamcrest.Matchers.contains(org.hamcrest.Matchers.nullValue())));
+    }
+
+    @ParameterizedTest
     @MethodSource("tiposEPerfis")
     void criacaoEEdicaoExigemSessaoECsrf(TipoMovimentacao tipo, TipoUsuario perfil) throws Exception {
         criarMovimentacao(tipo, outroUsuario, "");
