@@ -9,6 +9,16 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface ProdutoLoteRepository extends JpaRepository<ProdutoLote, Integer> {
+  @Query("""
+      SELECT COUNT(DISTINCT l.produto.id) FROM ProdutoLote l
+      WHERE l.produto.status = 'ATIVO' AND l.quantidade > 0
+        AND NOT EXISTS (
+          SELECT m.id FROM Movimentacao m
+          WHERE m.produto = l.produto AND m.data BETWEEN :inicio AND :fim
+        )
+      """)
+  Long countProdutosSemMovimentacaoNoPeriodo(@Param("inicio") LocalDate inicio, @Param("fim") LocalDate fim);
+
   @Query("SELECT SUM(p.quantidade) FROM ProdutoLote p WHERE p.produto.id = :id")
   Integer sumQuantidadeByProdutoId(@Param("id") Integer id);
 
