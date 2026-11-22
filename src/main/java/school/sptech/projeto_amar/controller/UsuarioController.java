@@ -135,6 +135,27 @@ public class UsuarioController {
                 }
         }
 
+        @PatchMapping("/me/senha")
+        @Operation(summary = "Alterar a própria senha", description = "Valida a senha atual e altera a senha do usuário autenticado. "
+                        + "A nova senha deve ter de 8 a 25 caracteres, incluindo maiúscula, minúscula, número e caractere especial (@$!%*?&). "
+                        + "Após o sucesso, todas as sessões são invalidadas e é necessário fazer login novamente.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "Senha alterada com sucesso"),
+                        @ApiResponse(responseCode = "400", description = "Senha atual incorreta ou nova senha inválida"),
+                        @ApiResponse(responseCode = "401", description = "Usuário não autenticado"),
+                        @ApiResponse(responseCode = "403", description = "Token CSRF ausente ou inválido")
+        })
+        public ResponseEntity<?> alterarSenha(
+                        @AuthenticationPrincipal UsuarioDetalhesDTO usuario,
+                        @Valid @RequestBody AlteracaoSenhaRequestDTO requestDTO) {
+                try {
+                        service.alterarSenha(usuario.getId(), requestDTO.senhaAtual(), requestDTO.novaSenha());
+                        return ResponseEntity.noContent().build();
+                } catch (IllegalArgumentException exception) {
+                        return ResponseEntity.badRequest().body(Map.of("mensagem", "Senha atual incorreta"));
+                }
+        }
+
         @PostMapping("/logout")
         @Operation(summary = "Logout", description = "Remove o cookie de autenticação do cliente")
         @ApiResponses({
@@ -204,10 +225,15 @@ public class UsuarioController {
         })
         @PreAuthorize("hasRole('ADMINISTRADOR')")
         public ResponseEntity<UsuarioResponseDTO> atualizar(
-                        @Valid @RequestBody UsuarioRequestDTO u,
+                        @Valid @RequestBody UsuarioAtualizacaoRequestDTO u,
                         @Parameter(description = "ID do usuário") @PathVariable Integer id) {
 
-                Usuario atualizado = service.atualizar(id, UsuarioMapping.toDomain(u));
+                Usuario dados = new Usuario();
+                dados.setNome(u.nome());
+                dados.setEmail(u.email());
+                dados.setTipoUsuario(u.tipoUsuario());
+                dados.setStatus(u.status());
+                Usuario atualizado = service.atualizar(id, dados);
                 return ResponseEntity.ok(UsuarioMapping.toResponse(atualizado));
         }
 

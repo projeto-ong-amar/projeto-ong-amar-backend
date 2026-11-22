@@ -79,7 +79,7 @@ public class UsuarioService {
             () -> new org.springframework.security.authentication.BadCredentialsException("Credenciais inválidas"));
 
     UsuarioSessaoDTO sessao = UsuarioMapping.toSessao(usuario);
-    return new UsuarioTokenDTO(sessao.userId(), sessao.nome(), sessao.email(), sessao.tipoUsuario(), token);
+    return new UsuarioTokenDTO(sessao.id(), sessao.nome(), sessao.email(), sessao.tipoUsuario(), token);
   }
 
   @Transactional
@@ -123,6 +123,19 @@ public class UsuarioService {
     tokenRecuperacaoSenhaRepository.save(tokenRecuperacao);
   }
 
+  @Transactional
+  public void alterarSenha(Integer usuarioId, String senhaAtual, String novaSenha) {
+    Usuario usuario = repository.findById(usuarioId).orElseThrow(UsuarioNaoEncontradoException::new);
+    if (!"ATIVO".equals(usuario.getStatus()) || !passwordEncoder.matches(senhaAtual, usuario.getSenha())) {
+      throw new IllegalArgumentException("Senha atual incorreta");
+    }
+
+    usuario.setSenha(passwordEncoder.encode(novaSenha));
+    invalidarTokens(usuario);
+    tokenRecuperacaoSenhaRepository.deleteByUsuarioId(usuarioId);
+    repository.save(usuario);
+  }
+
   public List<Usuario> listarTodos() {
     List<Usuario> usuarios = repository.findAllByStatus("ATIVO");
     if (usuarios.isEmpty()) {
@@ -156,7 +169,6 @@ public class UsuarioService {
     Usuario usuarioExistente = repository.findById(id).orElseThrow(UsuarioNaoEncontradoException::new);
     usuarioExistente.setNome(u.getNome());
     usuarioExistente.setEmail(u.getEmail());
-    usuarioExistente.setSenha(passwordEncoder.encode(u.getSenha()));
     invalidarTokens(usuarioExistente);
 
     return repository.save(usuarioExistente);
