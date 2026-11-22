@@ -289,7 +289,6 @@ class UsuarioServiceTest {
         void deveAtualizarComSucesso() {
             when(repository.existsById(1)).thenReturn(true);
             when(repository.findById(1)).thenReturn(Optional.of(usuario));
-            when(passwordEncoder.encode(anyString())).thenReturn("novaSenhaHash");
             when(repository.save(any(Usuario.class))).thenReturn(usuario);
 
             Usuario novosDados = new Usuario();
@@ -302,6 +301,8 @@ class UsuarioServiceTest {
             assertNotNull(resultado);
             verify(repository).save(any(Usuario.class));
             assertEquals(1, usuario.getVersaoToken());
+            assertEquals("Senha@123", usuario.getSenha());
+            verifyNoInteractions(passwordEncoder);
         }
 
         @Test
@@ -312,6 +313,49 @@ class UsuarioServiceTest {
             Usuario novosDados = new Usuario();
             assertThrows(UsuarioNaoEncontradoException.class,
                     () -> service.atualizar(99, novosDados));
+        }
+    }
+
+    @Nested
+    @DisplayName("alterarSenha()")
+    class AlterarSenha {
+        @Test
+        void deveValidarSenhaAtualSalvarHashEInvalidarSessoes() {
+            when(repository.findById(1)).thenReturn(Optional.of(usuario));
+            when(passwordEncoder.matches("Senha@123", usuario.getSenha())).thenReturn(true);
+            when(passwordEncoder.encode("NovaSenha@1")).thenReturn("novoHash");
+
+            service.alterarSenha(1, "Senha@123", "NovaSenha@1");
+
+            assertEquals("novoHash", usuario.getSenha());
+            assertEquals(1, usuario.getVersaoToken());
+            verify(repository).save(usuario);
+            verify(tokenRecuperacaoSenhaRepository).deleteByUsuarioId(1);
+        }
+
+        @Test
+        void naoDeveAlterarSenhaQuandoAtualIncorreta() {
+            when(repository.findById(1)).thenReturn(Optional.of(usuario));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> service.alterarSenha(1, "incorreta", "NovaSenha@1"));
+
+            assertEquals("Senha@123", usuario.getSenha());
+            assertEquals(0, usuario.getVersaoToken());
+            verify(passwordEncoder, never()).encode(anyString());
+            verify(repository, never()).save(any());
+            verifyNoInteractions(tokenRecuperacaoSenhaRepository);
+        }
+
+        @Test
+        void deveRejeitarUsuarioInativo() {
+            usuario.setStatus("INATIVO");
+            when(repository.findById(1)).thenReturn(Optional.of(usuario));
+
+            assertThrows(IllegalArgumentException.class,
+                    () -> service.alterarSenha(1, "Senha@123", "NovaSenha@1"));
+            verifyNoInteractions(passwordEncoder, tokenRecuperacaoSenhaRepository);
+            verify(repository, never()).save(any());
         }
     }
 
