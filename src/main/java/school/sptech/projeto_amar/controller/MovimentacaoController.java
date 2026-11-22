@@ -9,8 +9,10 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import school.sptech.projeto_amar.domain.Movimentacao;
+import school.sptech.projeto_amar.dto.usuario.UsuarioDetalhesDTO;
 import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.dto.movimentacao.entrada.EntradaRequestDTO;
 import school.sptech.projeto_amar.dto.movimentacao.entrada.MovimentacaoHistoricoResponseDTO;
@@ -65,8 +67,9 @@ public class MovimentacaoController {
             @ApiResponse(responseCode = "201", description = "Entrada registrada com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
-    public ResponseEntity<MovimentacaoResponseDTO> entrada(@Valid @RequestBody EntradaRequestDTO entrada) {
-        Movimentacao movimentacao = service.entrada(entrada);
+    public ResponseEntity<MovimentacaoResponseDTO> entrada(@Valid @RequestBody EntradaRequestDTO entrada,
+            @AuthenticationPrincipal UsuarioDetalhesDTO usuario) {
+        Movimentacao movimentacao = service.entrada(entrada, usuario.getId());
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
     }
 
@@ -123,8 +126,9 @@ public class MovimentacaoController {
             @ApiResponse(responseCode = "201", description = "Saída registrada com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
-    public ResponseEntity<MovimentacaoResponseDTO> saida(@Valid @RequestBody SaidaRequestDTO saida) {
-        Movimentacao movimentacao = service.saida(saida);
+    public ResponseEntity<MovimentacaoResponseDTO> saida(@Valid @RequestBody SaidaRequestDTO saida,
+            @AuthenticationPrincipal UsuarioDetalhesDTO usuario) {
+        Movimentacao movimentacao = service.saida(saida, usuario.getId());
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
     }
 
@@ -153,8 +157,9 @@ public class MovimentacaoController {
             @ApiResponse(responseCode = "201", description = "Perda registrada com sucesso"),
             @ApiResponse(responseCode = "400", description = "Dados inválidos")
     })
-    public ResponseEntity<MovimentacaoResponseDTO> perda(@Valid @RequestBody PerdaRequestDTO perda) {
-        Movimentacao movimentacao = service.perda(perda);
+    public ResponseEntity<MovimentacaoResponseDTO> perda(@Valid @RequestBody PerdaRequestDTO perda,
+            @AuthenticationPrincipal UsuarioDetalhesDTO usuario) {
+        Movimentacao movimentacao = service.perda(perda, usuario.getId());
         return ResponseEntity.status(201).body(MovimentacaoMapping.toResponse(movimentacao));
     }
 

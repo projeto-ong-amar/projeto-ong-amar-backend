@@ -84,13 +84,13 @@ public class MovimentacaoService {
     }
 
     @Transactional
-    public Movimentacao entrada(EntradaRequestDTO entrada) {
+    public Movimentacao entrada(EntradaRequestDTO entrada, Integer usuarioAutenticadoId) {
         Map<Integer, Integer> estoqueAnterior = capturarEstoque(entrada.fkProduto());
         Produto produto =
                 produtoRepository.findById(entrada.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
 
         Usuario usuario =
-                usuarioRepository.findById(entrada.fkUsuario()).orElseThrow(UsuarioNaoEncontradoException::new);
+                usuarioRepository.findById(usuarioAutenticadoId).orElseThrow(UsuarioNaoEncontradoException::new);
 
         ProdutoLote lote = new ProdutoLote();
         lote.setProduto(produto);
@@ -144,9 +144,6 @@ public class MovimentacaoService {
         Produto produto = produtoRepository.findById(entrada.fkProduto())
                 .orElseThrow(ProdutoNaoEncontradoException::new);
 
-        Usuario usuario = usuarioRepository.findById(entrada.fkUsuario())
-                .orElseThrow(UsuarioNaoEncontradoException::new);
-
         MovimentacaoEstoque movEstoque = movimentacaoEstoqueRepository
                 .findFirstByMovimentacaoId(id)
                 .orElseThrow(() -> new MovimentacaoNaoEncontradaException("Item de estoque da movimentação não encontrado"));
@@ -169,7 +166,6 @@ public class MovimentacaoService {
         m.setMotivo(entrada.motivo());
         m.setQuantidade(entrada.quantidade());
         m.setProduto(produto);
-        m.setUsuario(usuario);
         repository.save(m);
 
         movEstoque.setQuantidade(entrada.quantidade());
@@ -210,13 +206,13 @@ public class MovimentacaoService {
     }
 
     @Transactional
-    public Movimentacao saida(SaidaRequestDTO saida){
+    public Movimentacao saida(SaidaRequestDTO saida, Integer usuarioAutenticadoId){
         Map<Integer, Integer> estoqueAnterior = capturarEstoque(saida.fkProduto());
         Produto produto =
                 produtoRepository.findById(saida.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
 
         Usuario usuario =
-                usuarioRepository.findById(saida.fkUsuario()).orElseThrow(UsuarioNaoEncontradoException::new);
+                usuarioRepository.findById(usuarioAutenticadoId).orElseThrow(UsuarioNaoEncontradoException::new);
 
         Integer estoqueTotal = calcularEstoqueTotal(produto.getId());
 
@@ -274,9 +270,6 @@ public class MovimentacaoService {
         Produto produto = produtoRepository.findById(saida.fkProduto())
                 .orElseThrow(ProdutoNaoEncontradoException::new);
 
-        Usuario usuario = usuarioRepository.findById(saida.fkUsuario())
-                .orElseThrow(UsuarioNaoEncontradoException::new);
-
         List<MovimentacaoEstoque> itensAntigos = movimentacaoEstoqueRepository.findByMovimentacaoId(id);
 
         if (itensAntigos.isEmpty()) {
@@ -322,7 +315,6 @@ public class MovimentacaoService {
         m.setMotivo(saida.motivo());
         m.setQuantidade(saida.quantidade());
         m.setProduto(produto);
-        m.setUsuario(usuario);
         repository.save(m);
 
         publicarAlteracoesEstoque(estoqueAnterior);
@@ -358,10 +350,10 @@ public class MovimentacaoService {
     }
 
     @Transactional
-    public Movimentacao perda(PerdaRequestDTO perda) {
+    public Movimentacao perda(PerdaRequestDTO perda, Integer usuarioAutenticadoId) {
         Map<Integer, Integer> estoqueAnterior = capturarEstoque(perda.fkProduto());
         Produto produto = produtoRepository.findById(perda.fkProduto()).orElseThrow(ProdutoNaoEncontradoException::new);
-        Usuario usuario = usuarioRepository.findById(perda.fkUsuario()).orElseThrow(UsuarioNaoEncontradoException::new);
+        Usuario usuario = usuarioRepository.findById(usuarioAutenticadoId).orElseThrow(UsuarioNaoEncontradoException::new);
         
         Integer estoqueTotal = calcularEstoqueTotal(perda.fkProduto());
         
@@ -410,9 +402,6 @@ public class MovimentacaoService {
         Produto produto = produtoRepository.findById(perda.fkProduto())
                 .orElseThrow(ProdutoNaoEncontradoException::new);
 
-        Usuario usuario = usuarioRepository.findById(perda.fkUsuario())
-                .orElseThrow(UsuarioNaoEncontradoException::new);
-
         ProdutoLote novoLote = produtoLoteRepository.findById(perda.fkLote())
                 .orElseThrow(LoteNaoEncontradoException::new);
 
@@ -440,7 +429,6 @@ public class MovimentacaoService {
         m.setMotivo(perda.motivo());
         m.setQuantidade(perda.quantidade());
         m.setProduto(produto);
-        m.setUsuario(usuario);
         repository.save(m);
 
         movEstoque.setProdutoLote(novoLote);
