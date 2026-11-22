@@ -207,7 +207,7 @@ class MovimentacaoServiceTest {
             when(repository.save(any(Movimentacao.class))).thenReturn(movimentacao);
             when(movimentacaoEstoqueRepository.save(any(MovimentacaoEstoque.class))).thenReturn(movEstoque);
 
-            Movimentacao resultado = service.entrada(entradaDTO);
+            Movimentacao resultado = service.entrada(entradaDTO, 1);
 
             assertNotNull(resultado);
             verify(produtoLoteRepository).save(any(ProdutoLote.class));
@@ -219,7 +219,7 @@ class MovimentacaoServiceTest {
         @DisplayName("Deve lançar exceção quando produto inexistente")
         void deveLancarExcecaoProdutoInexistente() {
             when(produtoRepository.findById(1)).thenReturn(Optional.empty());
-            assertThrows(ProdutoNaoEncontradoException.class, () -> service.entrada(entradaDTO));
+            assertThrows(ProdutoNaoEncontradoException.class, () -> service.entrada(entradaDTO, 1));
         }
 
         @Test
@@ -227,7 +227,7 @@ class MovimentacaoServiceTest {
         void deveLancarExcecaoUsuarioInexistente() {
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
             when(usuarioRepository.findById(1)).thenReturn(Optional.empty());
-            assertThrows(UsuarioNaoEncontradoException.class, () -> service.entrada(entradaDTO));
+            assertThrows(UsuarioNaoEncontradoException.class, () -> service.entrada(entradaDTO, 1));
         }
     }
 
@@ -248,7 +248,6 @@ class MovimentacaoServiceTest {
         void deveAtualizarEntrada() {
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(movimentacaoEstoqueRepository.findFirstByMovimentacaoId(1))
                     .thenReturn(Optional.of(movEstoque));
             when(repository.save(any(Movimentacao.class))).thenReturn(movimentacao);
@@ -256,6 +255,8 @@ class MovimentacaoServiceTest {
             Movimentacao resultado = service.atualizarEntrada(entradaDTO, 1);
 
             assertNotNull(resultado);
+            assertSame(usuario, resultado.getUsuario());
+            verifyNoInteractions(usuarioRepository);
         }
 
         @Test
@@ -285,21 +286,10 @@ class MovimentacaoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando usuário inexistente")
-        void deveLancarExcecaoUsuarioInexistente() {
-            when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
-            when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.empty());
-            assertThrows(UsuarioNaoEncontradoException.class,
-                    () -> service.atualizarEntrada(entradaDTO, 1));
-        }
-
-        @Test
         @DisplayName("Deve lançar exceção quando MovimentacaoEstoque não encontrada")
         void deveLancarExcecaoMovEstoqueNaoEncontrada() {
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(movimentacaoEstoqueRepository.findFirstByMovimentacaoId(1))
                     .thenReturn(Optional.empty());
             assertThrows(MovimentacaoNaoEncontradaException.class,
@@ -316,7 +306,6 @@ class MovimentacaoServiceTest {
 
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(movimentacaoEstoqueRepository.findFirstByMovimentacaoId(1))
                     .thenReturn(Optional.of(movEstoque));
 
@@ -404,7 +393,7 @@ class MovimentacaoServiceTest {
             when(produtoLoteRepository.findByProdutoIdAndQuantidadeGreaterThanOrderByValidadeAsc(1, 0))
                     .thenReturn(List.of(lote));
 
-            Movimentacao resultado = service.saida(saidaDTO);
+            Movimentacao resultado = service.saida(saidaDTO, 1);
 
             assertNotNull(resultado);
             verify(repository).save(any(Movimentacao.class));
@@ -414,7 +403,7 @@ class MovimentacaoServiceTest {
         @DisplayName("Deve lançar exceção quando produto inexistente")
         void deveLancarExcecaoProdutoInexistente() {
             when(produtoRepository.findById(1)).thenReturn(Optional.empty());
-            assertThrows(ProdutoNaoEncontradoException.class, () -> service.saida(saidaDTO));
+            assertThrows(ProdutoNaoEncontradoException.class, () -> service.saida(saidaDTO, 1));
         }
 
         @Test
@@ -422,7 +411,7 @@ class MovimentacaoServiceTest {
         void deveLancarExcecaoUsuarioInexistente() {
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
             when(usuarioRepository.findById(1)).thenReturn(Optional.empty());
-            assertThrows(UsuarioNaoEncontradoException.class, () -> service.saida(saidaDTO));
+            assertThrows(UsuarioNaoEncontradoException.class, () -> service.saida(saidaDTO, 1));
         }
 
         @Test
@@ -432,7 +421,7 @@ class MovimentacaoServiceTest {
             when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(produtoLoteRepository.sumQuantidadeByProdutoId(1)).thenReturn(5);
 
-            assertThrows(EstoqueInsuficienteException.class, () -> service.saida(saidaDTO));
+            assertThrows(EstoqueInsuficienteException.class, () -> service.saida(saidaDTO, 1));
         }
 
         @Test
@@ -457,7 +446,7 @@ class MovimentacaoServiceTest {
             when(produtoLoteRepository.findByProdutoIdAndQuantidadeGreaterThanOrderByValidadeAsc(1, 0))
                     .thenReturn(List.of(lote1, lote2));
 
-            Movimentacao resultado = service.saida(saidaGrande);
+            Movimentacao resultado = service.saida(saidaGrande, 1);
 
             assertNotNull(resultado);
             verify(produtoLoteRepository, times(2)).save(any(ProdutoLote.class));
@@ -482,7 +471,6 @@ class MovimentacaoServiceTest {
         void deveAtualizarSaida() {
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(movimentacaoEstoqueRepository.findByMovimentacaoId(1))
                     .thenReturn(List.of(movEstoque));
             when(produtoLoteRepository.sumQuantidadeByProdutoId(1)).thenReturn(100);
@@ -493,6 +481,8 @@ class MovimentacaoServiceTest {
             Movimentacao resultado = service.atualizarSaida(saidaDTO, 1);
 
             assertNotNull(resultado);
+            assertSame(usuario, resultado.getUsuario());
+            verifyNoInteractions(usuarioRepository);
         }
 
         @Test
@@ -517,7 +507,6 @@ class MovimentacaoServiceTest {
         void deveLancarExcecaoItensNaoEncontrados() {
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(movimentacaoEstoqueRepository.findByMovimentacaoId(1))
                     .thenReturn(Collections.emptyList());
 
@@ -531,7 +520,6 @@ class MovimentacaoServiceTest {
             SaidaRequestDTO saidaGrande = new SaidaRequestDTO(500, LocalDate.now(), "Grande", 1, 1);
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(movimentacaoEstoqueRepository.findByMovimentacaoId(1))
                     .thenReturn(List.of(movEstoque));
             when(produtoLoteRepository.sumQuantidadeByProdutoId(1)).thenReturn(10);
@@ -610,7 +598,7 @@ class MovimentacaoServiceTest {
             when(produtoLoteRepository.findById(1)).thenReturn(Optional.of(lote));
             when(repository.save(any(Movimentacao.class))).thenReturn(movimentacao);
 
-            Movimentacao resultado = service.perda(perdaDTO);
+            Movimentacao resultado = service.perda(perdaDTO, 1);
 
             assertNotNull(resultado);
             verify(repository).save(any(Movimentacao.class));
@@ -620,7 +608,7 @@ class MovimentacaoServiceTest {
         @DisplayName("Deve lançar exceção quando produto inexistente")
         void deveLancarExcecaoProdutoInexistente() {
             when(produtoRepository.findById(1)).thenReturn(Optional.empty());
-            assertThrows(ProdutoNaoEncontradoException.class, () -> service.perda(perdaDTO));
+            assertThrows(ProdutoNaoEncontradoException.class, () -> service.perda(perdaDTO, 1));
         }
 
         @Test
@@ -628,7 +616,7 @@ class MovimentacaoServiceTest {
         void deveLancarExcecaoUsuarioInexistente() {
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
             when(usuarioRepository.findById(1)).thenReturn(Optional.empty());
-            assertThrows(UsuarioNaoEncontradoException.class, () -> service.perda(perdaDTO));
+            assertThrows(UsuarioNaoEncontradoException.class, () -> service.perda(perdaDTO, 1));
         }
 
         @Test
@@ -638,7 +626,7 @@ class MovimentacaoServiceTest {
             when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(produtoLoteRepository.sumQuantidadeByProdutoId(1)).thenReturn(2);
 
-            assertThrows(EstoqueInsuficienteException.class, () -> service.perda(perdaDTO));
+            assertThrows(EstoqueInsuficienteException.class, () -> service.perda(perdaDTO, 1));
         }
 
         @Test
@@ -649,7 +637,7 @@ class MovimentacaoServiceTest {
             when(produtoLoteRepository.sumQuantidadeByProdutoId(1)).thenReturn(100);
             when(produtoLoteRepository.findById(1)).thenReturn(Optional.empty());
 
-            assertThrows(LoteNaoEncontradoException.class, () -> service.perda(perdaDTO));
+            assertThrows(LoteNaoEncontradoException.class, () -> service.perda(perdaDTO, 1));
         }
 
         @Test
@@ -661,7 +649,7 @@ class MovimentacaoServiceTest {
             when(produtoLoteRepository.sumQuantidadeByProdutoId(1)).thenReturn(100);
             when(produtoLoteRepository.findById(1)).thenReturn(Optional.of(lote));
 
-            assertThrows(EstoqueInsuficienteException.class, () -> service.perda(perdaDTO));
+            assertThrows(EstoqueInsuficienteException.class, () -> service.perda(perdaDTO, 1));
         }
     }
 
@@ -682,7 +670,6 @@ class MovimentacaoServiceTest {
         void deveAtualizarPerda() {
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(produtoLoteRepository.findById(1)).thenReturn(Optional.of(lote));
             when(movimentacaoEstoqueRepository.findFirstByMovimentacaoId(1))
                     .thenReturn(Optional.of(movEstoque));
@@ -692,6 +679,8 @@ class MovimentacaoServiceTest {
             Movimentacao resultado = service.atualizarPerda(perdaDTO, 1);
 
             assertNotNull(resultado);
+            assertSame(usuario, resultado.getUsuario());
+            verifyNoInteractions(usuarioRepository);
         }
 
         @Test
@@ -721,21 +710,10 @@ class MovimentacaoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar exceção quando usuário inexistente")
-        void deveLancarExcecaoUsuarioInexistente() {
-            when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
-            when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.empty());
-            assertThrows(UsuarioNaoEncontradoException.class,
-                    () -> service.atualizarPerda(perdaDTO, 1));
-        }
-
-        @Test
         @DisplayName("Deve lançar exceção quando lote inexistente")
         void deveLancarExcecaoLoteInexistente() {
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(produtoLoteRepository.findById(1)).thenReturn(Optional.empty());
             assertThrows(LoteNaoEncontradoException.class,
                     () -> service.atualizarPerda(perdaDTO, 1));
@@ -746,7 +724,6 @@ class MovimentacaoServiceTest {
         void deveLancarExcecaoMovEstoqueNaoEncontrada() {
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(produtoLoteRepository.findById(1)).thenReturn(Optional.of(lote));
             when(movimentacaoEstoqueRepository.findFirstByMovimentacaoId(1))
                     .thenReturn(Optional.empty());
@@ -760,7 +737,6 @@ class MovimentacaoServiceTest {
             PerdaRequestDTO perdaGrande = new PerdaRequestDTO(500, LocalDate.now(), "Grande", 1, 1, 1);
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(produtoLoteRepository.findById(1)).thenReturn(Optional.of(lote));
             when(movimentacaoEstoqueRepository.findFirstByMovimentacaoId(1))
                     .thenReturn(Optional.of(movEstoque));
@@ -777,7 +753,6 @@ class MovimentacaoServiceTest {
             lote.setQuantidade(50);
             when(repository.findById(1)).thenReturn(Optional.of(movimentacao));
             when(produtoRepository.findById(1)).thenReturn(Optional.of(produto));
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(produtoLoteRepository.findById(1)).thenReturn(Optional.of(lote));
             when(movimentacaoEstoqueRepository.findFirstByMovimentacaoId(1))
                     .thenReturn(Optional.of(movEstoque));

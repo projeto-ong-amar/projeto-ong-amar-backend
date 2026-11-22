@@ -29,8 +29,7 @@ public record PerdaRequestDTO(
         @NotNull @Positive
         Integer fkProduto,
 
-        @Schema(description = "ID do usuário responsável", example = "2")
-        @NotNull @Positive
+        @Schema(description = "Campo legado ignorado. O responsável vem da sessão na criação e é preservado na edição.", deprecated = true)
         Integer fkUsuario,
 
         @Schema(description = "ID do lote relacionado à perda", example = "3")
