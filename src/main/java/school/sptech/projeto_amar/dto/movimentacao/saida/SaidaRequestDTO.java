@@ -12,9 +12,10 @@ public record SaidaRequestDTO(
         @NotNull @Positive
         Integer quantidade,
 
-        @Schema(description = "Data em que a saída foi realizada",
+        @Schema(description = "Data em que a saída foi realizada (até hoje)",
                 example = "2025-04-15", type = "string", format = "date")
         @NotNull
+        @PastOrPresent(message = "A data de saída não pode ser futura")
         LocalDate dataSaida,
 
         @Schema(description = "Motivo da saída",

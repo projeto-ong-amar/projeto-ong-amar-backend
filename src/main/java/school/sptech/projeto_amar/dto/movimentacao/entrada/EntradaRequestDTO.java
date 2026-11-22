@@ -12,12 +12,13 @@ public record EntradaRequestDTO(
         @NotNull @Positive
         Integer quantidade,
 
-        @Schema(description = "Data em que a entrada foi realizada",
+        @Schema(description = "Data em que a entrada foi realizada (até hoje)",
                 example = "2025-04-10", type = "string", format = "date")
         @NotNull
+        @PastOrPresent(message = "A data de entrada não pode ser futura")
         LocalDate dataEntrada,
 
-        @Schema(description = "Data de validade do produto (opcional)",
+        @Schema(description = "Data de validade do produto (opcional, igual ou posterior à entrada)",
                 example = "2026-12-31", type = "string", format = "date")
         LocalDate dataValidade,
 
@@ -34,4 +35,9 @@ public record EntradaRequestDTO(
         Integer fkUsuario
 
 ) {
+    @Schema(hidden = true)
+    @AssertTrue(message = "A validade deve ser igual ou posterior à data de entrada")
+    public boolean isValidadeConsistente() {
+        return dataValidade == null || dataEntrada == null || !dataValidade.isBefore(dataEntrada);
+    }
 }
