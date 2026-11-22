@@ -163,6 +163,7 @@ public class MovimentacaoService {
         lote.setProduto(produto);
         produtoLoteRepository.save(lote);
 
+        m.setData(entrada.dataEntrada());
         m.setMotivo(entrada.motivo());
         m.setQuantidade(entrada.quantidade());
         m.setProduto(produto);
@@ -312,6 +313,7 @@ public class MovimentacaoService {
             quantidadeRestante -= retirar;
         }
 
+        m.setData(saida.dataSaida());
         m.setMotivo(saida.motivo());
         m.setQuantidade(saida.quantidade());
         m.setProduto(produto);

@@ -47,6 +47,12 @@ class ResponsavelMovimentacaoIntegrationTest {
                         .map(perfil -> org.junit.jupiter.params.provider.Arguments.of(tipo, perfil)));
     }
 
+    static Stream<org.junit.jupiter.params.provider.Arguments> entradasSaidasEPerfis() {
+        return Stream.of(TipoMovimentacao.ENTRADA, TipoMovimentacao.SAIDA)
+                .flatMap(tipo -> Stream.of(TipoUsuario.ADMINISTRADOR, TipoUsuario.VOLUNTARIO)
+                        .map(perfil -> org.junit.jupiter.params.provider.Arguments.of(tipo, perfil)));
+    }
+
     @BeforeEach
     void setUp() throws Exception {
         outroUsuario = criarUsuario(TipoUsuario.ADMINISTRADOR);
@@ -119,6 +125,51 @@ class ResponsavelMovimentacaoIntegrationTest {
     }
 
     @ParameterizedTest
+    @MethodSource("entradasSaidasEPerfis")
+    @DisplayName("BUG-08: editar data atualiza resposta, banco, lote e histórico sem trocar o autor")
+    void edicaoDeDataPersisteNoHistorico(TipoMovimentacao tipo, TipoUsuario perfil) throws Exception {
+        criarMovimentacao(tipo, outroUsuario, "");
+        var original = movimentacaoRepository.findByTipoAndProdutoId(tipo, produto.getId()).getFirst();
+        Usuario editor = criarUsuario(perfil);
+        // Primeiro altera somente a data; depois altera também a quantidade.
+        for (int quantidade : List.of(2, 7)) {
+            LocalDate novaData = LocalDate.now().minusDays(quantidade);
+            String corpo = corpo(tipo, "", quantidade, original.getMotivo(), novaData);
+            mockMvc.perform(put(rota(tipo) + "/" + original.getId())
+                    .cookie(autenticar(editor), csrf).header("X-XSRF-TOKEN", csrf.getValue())
+                    .contentType(MediaType.APPLICATION_JSON).content(corpo))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").value(novaData.toString()))
+                    .andExpect(jsonPath("$.quantidade").value(quantidade))
+                    .andExpect(jsonPath("$.usuario.nome").value(outroUsuario.getNome()));
+
+            var salva = movimentacaoRepository.findById(original.getId()).orElseThrow();
+            assertEquals(novaData, salva.getData());
+            assertEquals(quantidade, salva.getQuantidade());
+            assertEquals(outroUsuario.getId(), salva.getUsuario().getId());
+            var lotes = loteRepository.findByProdutoIdAndQuantidadeGreaterThanOrderByValidadeAsc(produto.getId(), 0);
+            int estoqueEsperado = tipo == TipoMovimentacao.ENTRADA ? 1000 + quantidade : 1000 - quantidade;
+            assertEquals(estoqueEsperado, lotes.stream().mapToInt(ProdutoLote::getQuantidade).sum());
+            if (tipo == TipoMovimentacao.ENTRADA) {
+                var loteEntrada = lotes.stream().filter(l -> !l.getId().equals(lote.getId())).findFirst().orElseThrow();
+                assertEquals(novaData, loteEntrada.getDataEntrada());
+            } else {
+                assertEquals(lote.getDataEntrada(), loteRepository.findById(lote.getId()).orElseThrow().getDataEntrada());
+            }
+
+            String registro = "$.content[?(@.id == " + original.getId() + ")]";
+            mockMvc.perform(get(rota(tipo) + "/historico").param("size", "1000").cookie(autenticar(editor)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(registro + ".dataHora")
+                            .value(org.hamcrest.Matchers.contains(novaData.toString())))
+                    .andExpect(jsonPath(registro + ".quantidade")
+                            .value(org.hamcrest.Matchers.contains(quantidade)))
+                    .andExpect(jsonPath(registro + ".responsavelNome")
+                            .value(org.hamcrest.Matchers.contains(outroUsuario.getNome())));
+        }
+    }
+
+    @ParameterizedTest
     @MethodSource("tiposEPerfis")
     void criacaoEEdicaoExigemSessaoECsrf(TipoMovimentacao tipo, TipoUsuario perfil) throws Exception {
         criarMovimentacao(tipo, outroUsuario, "");
@@ -149,6 +200,10 @@ class ResponsavelMovimentacaoIntegrationTest {
     }
 
     private String corpo(TipoMovimentacao tipo, String campo, int quantidade, String motivo) {
+        return corpo(tipo, campo, quantidade, motivo, LocalDate.now());
+    }
+
+    private String corpo(TipoMovimentacao tipo, String campo, int quantidade, String motivo, LocalDate dataMovimentacao) {
         String data = switch (tipo) {
             case ENTRADA -> "dataEntrada";
             case SAIDA -> "dataSaida";
@@ -157,7 +212,7 @@ class ResponsavelMovimentacaoIntegrationTest {
         return """
                 {"quantidade":%d,"%s":"%s","dataValidade":"%s","motivo":"%s",
                  "fkProduto":%d,"fkLote":%d%s}
-                """.formatted(quantidade, data, LocalDate.now(), LocalDate.now().plusMonths(6), motivo,
+                """.formatted(quantidade, data, dataMovimentacao, LocalDate.now().plusMonths(6), motivo,
                 produto.getId(), lote.getId(), campo);
     }
 
