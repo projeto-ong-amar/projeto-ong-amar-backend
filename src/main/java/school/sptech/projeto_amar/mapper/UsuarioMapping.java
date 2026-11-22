@@ -5,7 +5,7 @@ import school.sptech.projeto_amar.dto.usuario.*;
 
 public class UsuarioMapping {
   public static UsuarioResponseDTO toResponse(Usuario u) {
-    return new UsuarioResponseDTO(u.getNome(), u.getEmail(), u.getTipoUsuario(), u.getStatus());
+    return new UsuarioResponseDTO(u.getId(), u.getNome(), u.getEmail(), u.getTipoUsuario(), u.getStatus());
   }
 
   public static Usuario toDomain(UsuarioRequestDTO u) {
