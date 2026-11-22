@@ -9,6 +9,8 @@ import java.util.List;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -80,76 +82,162 @@ public class AssistenteService {
         private record ResultadoIa(RelatorioIaResponseDTO conteudo, OrigemResultado origem, RuntimeException excecao) {
         }
 
+        private record PeriodoRelatorio(LocalDate dataInicio, LocalDate dataFim) {
+                boolean definido() {
+                        return dataInicio != null && dataFim != null;
+                }
+
+                String descricao() {
+                        return definido()
+                                        ? dataInicio.format(FORMATO_DATA) + " a " + dataFim.format(FORMATO_DATA)
+                                        : "Todo o histórico";
+                }
+
+                String instrucao() {
+                        return definido()
+                                        ? "Período considerado: " + descricao()
+                                                        + ". Use apenas dados dentro desse intervalo (inclusive)."
+                                        : "Período considerado: todo o histórico disponível.";
+                }
+        }
+
+        private static final String AVISO_PERIODO_PRODUTOS = "Período não aplicável: produtos não possuem data de cadastro; o relatório considera todos os produtos.";
+
         public String gerarRelatorioHistoricoEntradas(String pergunta) {
-                DadosRelatorio dados = montarDadosHistoricoEntradas();
-                return concluirRelatorioTexto("histórico de entradas", dados, pergunta);
+                return gerarRelatorioHistoricoEntradas(pergunta, null, null);
+        }
+
+        public String gerarRelatorioHistoricoEntradas(String pergunta, LocalDate dataInicio, LocalDate dataFim) {
+                PeriodoRelatorio periodo = normalizarPeriodo(dataInicio, dataFim);
+                DadosRelatorio dados = montarDadosHistoricoEntradas(periodo);
+                return concluirRelatorioTexto("histórico de entradas", dados, pergunta, periodo.instrucao());
         }
 
         public String gerarRelatorioHistoricoSaidas(String pergunta) {
-                DadosRelatorio dados = montarDadosHistoricoSaidas();
-                return concluirRelatorioTexto("histórico de saídas", dados, pergunta);
+                return gerarRelatorioHistoricoSaidas(pergunta, null, null);
+        }
+
+        public String gerarRelatorioHistoricoSaidas(String pergunta, LocalDate dataInicio, LocalDate dataFim) {
+                PeriodoRelatorio periodo = normalizarPeriodo(dataInicio, dataFim);
+                DadosRelatorio dados = montarDadosHistoricoSaidas(periodo);
+                return concluirRelatorioTexto("histórico de saídas", dados, pergunta, periodo.instrucao());
         }
 
         public String gerarRelatorioDesempenhoGeral(String pergunta) {
-                DadosRelatorio dados = montarDadosDesempenhoGeral();
-                return concluirRelatorioTexto("desempenho geral do estoque", dados, pergunta);
+                return gerarRelatorioDesempenhoGeral(pergunta, null, null);
+        }
+
+        public String gerarRelatorioDesempenhoGeral(String pergunta, LocalDate dataInicio, LocalDate dataFim) {
+                PeriodoRelatorio periodo = normalizarPeriodo(dataInicio, dataFim);
+                DadosRelatorio dados = montarDadosDesempenhoGeral(periodo);
+                return concluirRelatorioTexto("desempenho geral do estoque", dados, pergunta, periodo.instrucao());
         }
 
         public String gerarRelatorioHistoricoProdutosCadastrados(String pergunta) {
+                return gerarRelatorioHistoricoProdutosCadastrados(pergunta, null, null);
+        }
+
+        public String gerarRelatorioHistoricoProdutosCadastrados(
+                        String pergunta, LocalDate dataInicio, LocalDate dataFim) {
+                normalizarPeriodo(dataInicio, dataFim);
                 DadosRelatorio dados = montarDadosProdutosCadastrados();
-                return concluirRelatorioTexto("histórico de produtos cadastrados", dados, pergunta);
+                return concluirRelatorioTexto(
+                                "histórico de produtos cadastrados", dados, pergunta, AVISO_PERIODO_PRODUTOS);
         }
 
         public RelatorioAssistenteDTO gerarRelatorioHistoricoEntradasParaPdf(String pergunta) {
+                return gerarRelatorioHistoricoEntradasParaPdf(pergunta, null, null);
+        }
+
+        public RelatorioAssistenteDTO gerarRelatorioHistoricoEntradasParaPdf(
+                        String pergunta, LocalDate dataInicio, LocalDate dataFim) {
+                PeriodoRelatorio periodo = normalizarPeriodo(dataInicio, dataFim);
                 return concluirRelatorioPdf(
                                 "Histórico de Entradas",
                                 "historico-entradas",
                                 "histórico de entradas",
-                                montarDadosHistoricoEntradas(),
-                                pergunta);
+                                montarDadosHistoricoEntradas(periodo),
+                                pergunta,
+                                periodo.instrucao(),
+                                periodo.descricao());
         }
 
         public RelatorioAssistenteDTO gerarRelatorioHistoricoSaidasParaPdf(String pergunta) {
+                return gerarRelatorioHistoricoSaidasParaPdf(pergunta, null, null);
+        }
+
+        public RelatorioAssistenteDTO gerarRelatorioHistoricoSaidasParaPdf(
+                        String pergunta, LocalDate dataInicio, LocalDate dataFim) {
+                PeriodoRelatorio periodo = normalizarPeriodo(dataInicio, dataFim);
                 return concluirRelatorioPdf(
                                 "Histórico de Saídas",
                                 "historico-saidas",
                                 "histórico de saídas",
-                                montarDadosHistoricoSaidas(),
-                                pergunta);
+                                montarDadosHistoricoSaidas(periodo),
+                                pergunta,
+                                periodo.instrucao(),
+                                periodo.descricao());
         }
 
         public RelatorioAssistenteDTO gerarRelatorioDesempenhoGeralParaPdf(String pergunta) {
+                return gerarRelatorioDesempenhoGeralParaPdf(pergunta, null, null);
+        }
+
+        public RelatorioAssistenteDTO gerarRelatorioDesempenhoGeralParaPdf(
+                        String pergunta, LocalDate dataInicio, LocalDate dataFim) {
+                PeriodoRelatorio periodo = normalizarPeriodo(dataInicio, dataFim);
                 return concluirRelatorioPdf(
                                 "Desempenho Geral do Estoque",
                                 "desempenho-geral",
                                 "desempenho geral do estoque",
-                                montarDadosDesempenhoGeral(),
-                                pergunta);
+                                montarDadosDesempenhoGeral(periodo),
+                                pergunta,
+                                periodo.instrucao(),
+                                periodo.descricao());
         }
 
         public RelatorioAssistenteDTO gerarRelatorioProdutosCadastradosParaPdf(String pergunta) {
+                return gerarRelatorioProdutosCadastradosParaPdf(pergunta, null, null);
+        }
+
+        public RelatorioAssistenteDTO gerarRelatorioProdutosCadastradosParaPdf(
+                        String pergunta, LocalDate dataInicio, LocalDate dataFim) {
+                normalizarPeriodo(dataInicio, dataFim);
                 return concluirRelatorioPdf(
                                 "Histórico de Produtos Cadastrados",
                                 "produtos-cadastrados",
                                 "histórico de produtos cadastrados",
                                 montarDadosProdutosCadastrados(),
-                                pergunta);
+                                pergunta,
+                                AVISO_PERIODO_PRODUTOS,
+                                "Não filtrado por período (produtos sem data de cadastro)");
         }
 
-        private DadosRelatorio montarDadosHistoricoEntradas() {
-                List<Movimentacao> entradas = movimentacaoRepository
-                                .findTop20ByTipoOrderByDataDescIdDesc(TipoMovimentacao.ENTRADA);
+        private DadosRelatorio montarDadosHistoricoEntradas(PeriodoRelatorio periodo) {
+                List<Movimentacao> entradas = periodo.definido()
+                                ? movimentacaoRepository.findTop20ByTipoAndDataBetweenOrderByDataDescIdDesc(
+                                                TipoMovimentacao.ENTRADA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.findTop20ByTipoOrderByDataDescIdDesc(TipoMovimentacao.ENTRADA);
 
-                Long totalEntradas = movimentacaoRepository.countByTipo(TipoMovimentacao.ENTRADA);
-                Integer quantidadeEntradas = movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.ENTRADA);
+                Long totalEntradas = periodo.definido()
+                                ? movimentacaoRepository.countByTipoAndDataBetween(
+                                                TipoMovimentacao.ENTRADA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.countByTipo(TipoMovimentacao.ENTRADA);
+                Integer quantidadeEntradas = periodo.definido()
+                                ? movimentacaoRepository.sumQuantidadeByTipoAndPeriodo(
+                                                TipoMovimentacao.ENTRADA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.ENTRADA);
 
                 StringBuilder dados = new StringBuilder();
+                dados.append(periodo.instrucao()).append("\n");
                 dados.append("Total de movimentações de entrada registradas: ").append(totalEntradas).append("\n");
                 dados.append("Total de itens que entraram no estoque: ").append(quantidadeEntradas).append("\n\n");
                 dados.append("Últimas entradas registradas (até 20):\n");
 
                 if (entradas.isEmpty()) {
-                        dados.append("- Nenhuma entrada cadastrada até o momento.\n");
+                        dados.append(periodo.definido()
+                                        ? "- Nenhuma entrada cadastrada no período.\n"
+                                        : "- Nenhuma entrada cadastrada até o momento.\n");
                 } else {
                         for (Movimentacao entrada : entradas) {
                                 dados.append("- Data: ").append(entrada.getData())
@@ -175,20 +263,31 @@ public class AssistenteService {
                 return new DadosRelatorio(dados.toString(), tabelas);
         }
 
-        private DadosRelatorio montarDadosHistoricoSaidas() {
-                List<Movimentacao> saidas = movimentacaoRepository
-                                .findTop20ByTipoOrderByDataDescIdDesc(TipoMovimentacao.SAIDA);
+        private DadosRelatorio montarDadosHistoricoSaidas(PeriodoRelatorio periodo) {
+                List<Movimentacao> saidas = periodo.definido()
+                                ? movimentacaoRepository.findTop20ByTipoAndDataBetweenOrderByDataDescIdDesc(
+                                                TipoMovimentacao.SAIDA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.findTop20ByTipoOrderByDataDescIdDesc(TipoMovimentacao.SAIDA);
 
-                Long totalSaidas = movimentacaoRepository.countByTipo(TipoMovimentacao.SAIDA);
-                Integer quantidadeSaidas = movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.SAIDA);
+                Long totalSaidas = periodo.definido()
+                                ? movimentacaoRepository.countByTipoAndDataBetween(
+                                                TipoMovimentacao.SAIDA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.countByTipo(TipoMovimentacao.SAIDA);
+                Integer quantidadeSaidas = periodo.definido()
+                                ? movimentacaoRepository.sumQuantidadeByTipoAndPeriodo(
+                                                TipoMovimentacao.SAIDA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.SAIDA);
 
                 StringBuilder dados = new StringBuilder();
+                dados.append(periodo.instrucao()).append("\n");
                 dados.append("Total de movimentações de saída registradas: ").append(totalSaidas).append("\n");
                 dados.append("Total de itens que saíram do estoque: ").append(quantidadeSaidas).append("\n\n");
                 dados.append("Últimas saídas registradas (até 20):\n");
 
                 if (saidas.isEmpty()) {
-                        dados.append("- Nenhuma saída cadastrada até o momento.\n");
+                        dados.append(periodo.definido()
+                                        ? "- Nenhuma saída cadastrada no período.\n"
+                                        : "- Nenhuma saída cadastrada até o momento.\n");
                 } else {
                         for (Movimentacao saida : saidas) {
                                 dados.append("- Data: ").append(saida.getData())
@@ -214,31 +313,59 @@ public class AssistenteService {
                 return new DadosRelatorio(dados.toString(), tabelas);
         }
 
-        private DadosRelatorio montarDadosDesempenhoGeral() {
+        private DadosRelatorio montarDadosDesempenhoGeral(PeriodoRelatorio periodo) {
                 Long totalProdutos = produtoRepository.count();
                 Long produtosAtivos = produtoRepository.countByStatus(STATUS_ATIVO);
                 Long produtosInativos = produtoRepository.countByStatus(STATUS_INATIVO);
                 Integer estoqueTotal = produtoLoteRepository.sumQuantidadeTotal();
 
-                Long totalEntradas = movimentacaoRepository.countByTipo(TipoMovimentacao.ENTRADA);
-                Long totalSaidas = movimentacaoRepository.countByTipo(TipoMovimentacao.SAIDA);
-                Long totalPerdas = movimentacaoRepository.countByTipo(TipoMovimentacao.PERDA);
+                Long totalEntradas = periodo.definido()
+                                ? movimentacaoRepository.countByTipoAndDataBetween(
+                                                TipoMovimentacao.ENTRADA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.countByTipo(TipoMovimentacao.ENTRADA);
+                Long totalSaidas = periodo.definido()
+                                ? movimentacaoRepository.countByTipoAndDataBetween(
+                                                TipoMovimentacao.SAIDA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.countByTipo(TipoMovimentacao.SAIDA);
+                Long totalPerdas = periodo.definido()
+                                ? movimentacaoRepository.countByTipoAndDataBetween(
+                                                TipoMovimentacao.PERDA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.countByTipo(TipoMovimentacao.PERDA);
 
-                Integer quantidadeEntradas = movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.ENTRADA);
-                Integer quantidadeSaidas = movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.SAIDA);
-                Integer quantidadePerdas = movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.PERDA);
+                Integer quantidadeEntradas = periodo.definido()
+                                ? movimentacaoRepository.sumQuantidadeByTipoAndPeriodo(
+                                                TipoMovimentacao.ENTRADA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.ENTRADA);
+                Integer quantidadeSaidas = periodo.definido()
+                                ? movimentacaoRepository.sumQuantidadeByTipoAndPeriodo(
+                                                TipoMovimentacao.SAIDA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.SAIDA);
+                Integer quantidadePerdas = periodo.definido()
+                                ? movimentacaoRepository.sumQuantidadeByTipoAndPeriodo(
+                                                TipoMovimentacao.PERDA, periodo.dataInicio(), periodo.dataFim())
+                                : movimentacaoRepository.sumQuantidadeByTipo(TipoMovimentacao.PERDA);
 
                 LocalDate hoje = LocalDate.now();
                 Long lotesVencidos = produtoLoteRepository.countLotesVencidos(hoje);
                 Long lotesProximosVencimento = produtoLoteRepository
                                 .countLotesProximosDoVencimento(hoje, hoje.plusDays(7));
 
-                List<Object[]> topEntradas = movimentacaoRepository
-                                .findTopProdutosPorTipo(TipoMovimentacao.ENTRADA, PageRequest.of(0, 5));
-                List<Object[]> topSaidas = movimentacaoRepository
-                                .findTopProdutosPorTipo(TipoMovimentacao.SAIDA, PageRequest.of(0, 5));
+                List<Object[]> topEntradas = periodo.definido()
+                                ? movimentacaoRepository.findTopProdutosPorTipoAndPeriodo(
+                                                TipoMovimentacao.ENTRADA, periodo.dataInicio(), periodo.dataFim(),
+                                                PageRequest.of(0, 5))
+                                : movimentacaoRepository.findTopProdutosPorTipo(
+                                                TipoMovimentacao.ENTRADA, PageRequest.of(0, 5));
+                List<Object[]> topSaidas = periodo.definido()
+                                ? movimentacaoRepository.findTopProdutosPorTipoAndPeriodo(
+                                                TipoMovimentacao.SAIDA, periodo.dataInicio(), periodo.dataFim(),
+                                                PageRequest.of(0, 5))
+                                : movimentacaoRepository.findTopProdutosPorTipo(
+                                                TipoMovimentacao.SAIDA, PageRequest.of(0, 5));
 
                 StringBuilder dados = new StringBuilder();
+                dados.append(periodo.instrucao()).append("\n");
+                dados.append("Observação: produtos, estoque atual e alertas de validade refletem a posição de hoje.\n\n");
                 dados.append("Visão geral operacional:\n");
                 dados.append("- Total de produtos cadastrados: ").append(totalProdutos).append("\n");
                 dados.append("- Produtos ativos: ").append(produtosAtivos).append("\n");
@@ -298,6 +425,7 @@ public class AssistenteService {
                 Long produtosInativos = produtoRepository.countByStatus(STATUS_INATIVO);
 
                 StringBuilder dados = new StringBuilder();
+                dados.append(AVISO_PERIODO_PRODUTOS).append("\n\n");
                 dados.append("Resumo de cadastros de produtos:\n");
                 dados.append("- Total de produtos cadastrados: ").append(totalProdutos).append("\n");
                 dados.append("- Produtos ativos: ").append(produtosAtivos).append("\n");
@@ -400,9 +528,10 @@ public class AssistenteService {
                                 linhas);
         }
 
-        private String concluirRelatorioTexto(String tipoRelatorio, DadosRelatorio dados, String pergunta) {
+        private String concluirRelatorioTexto(
+                        String tipoRelatorio, DadosRelatorio dados, String pergunta, String contextoPeriodo) {
                 String perguntaFinal = resolverPergunta(pergunta);
-                ResultadoIa resultado = chamarIaEstruturado(tipoRelatorio, dados, perguntaFinal);
+                ResultadoIa resultado = chamarIaEstruturado(tipoRelatorio, dados, perguntaFinal, contextoPeriodo);
 
                 return switch (resultado.origem()) {
                         case COTA_EXCEDIDA -> assistenteFallbackService.gerarRelatorioFallback(
@@ -418,9 +547,11 @@ public class AssistenteService {
                         String tipoDto,
                         String tipoIa,
                         DadosRelatorio dados,
-                        String pergunta) {
+                        String pergunta,
+                        String contextoPeriodo,
+                        String rotuloPeriodo) {
                 String perguntaFinal = resolverPergunta(pergunta);
-                ResultadoIa resultado = chamarIaEstruturado(tipoIa, dados, perguntaFinal);
+                ResultadoIa resultado = chamarIaEstruturado(tipoIa, dados, perguntaFinal, contextoPeriodo);
 
                 RelatorioIaResponseDTO conteudo = resultado.conteudo();
                 if (resultado.origem() == OrigemResultado.COTA_EXCEDIDA) {
@@ -441,6 +572,7 @@ public class AssistenteService {
                 return new RelatorioAssistenteDTO(
                                 conteudo.resumoExecutivo(),
                                 tipoDto,
+                                rotuloPeriodo,
                                 prioridade,
                                 conteudo.analise(),
                                 conteudo.acoesRecomendadas(),
@@ -450,7 +582,8 @@ public class AssistenteService {
         private ResultadoIa chamarIaEstruturado(
                         String tipoRelatorio,
                         DadosRelatorio dadosRelatorio,
-                        String perguntaFinal) {
+                        String perguntaFinal,
+                        String contextoPeriodo) {
                 String msg = """
                                 Você é um assistente logístico especializado em gerenciamento de alimentos e produtos de higiene.
                                 Gere um relatório sobre %s com base apenas nos dados abaixo.
@@ -487,7 +620,7 @@ public class AssistenteService {
                                 Dados do banco:
                                 %s
                                 """
-                                .formatted(tipoRelatorio, perguntaFinal, dadosRelatorio.texto());
+                                .formatted(tipoRelatorio, perguntaFinal, contextoPeriodo + "\n\n" + dadosRelatorio.texto());
 
                 try {
                         if (!toolCallbacks.isEmpty()) {
@@ -503,7 +636,7 @@ public class AssistenteService {
                                         .getResult().getOutput().getText();
                         return construirResultadoIa(respostaIa, tipoRelatorio, dadosRelatorio);
                 } catch (RuntimeException ex) {
-                        if (isQuotaExceeded(ex)) {
+                        if (isQuotaExceeded(ex) || isFalhaTemporariaIa(ex)) {
                                 return new ResultadoIa(null, OrigemResultado.COTA_EXCEDIDA, ex);
                         }
                         throw new ErroAoChamarIaException("Erro ao chamar serviço de IA para gerar relatório.");
@@ -629,6 +762,21 @@ public class AssistenteService {
                                 .replaceAll("\\p{M}", "");
         }
 
+        private PeriodoRelatorio normalizarPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+                if (dataInicio == null && dataFim == null) {
+                        return new PeriodoRelatorio(null, null);
+                }
+                if (dataInicio == null || dataFim == null) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                        "Informe dataInicio e dataFim juntas.");
+                }
+                if (dataInicio.isAfter(dataFim)) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                        "dataInicio deve ser anterior ou igual a dataFim.");
+                }
+                return new PeriodoRelatorio(dataInicio, dataFim);
+        }
+
         private String resolverPergunta(String pergunta) {
                 return (pergunta == null || pergunta.isBlank())
                                 ? "Analise os dados e destaque os principais pontos de atenção e ações recomendadas."
@@ -663,6 +811,29 @@ public class AssistenteService {
                                                 || texto.contains("quota")
                                                 || texto.contains("rate limit")
                                                 || texto.contains("exceeded your current quota")) {
+                                        return true;
+                                }
+                        }
+                        atual = atual.getCause();
+                }
+                return false;
+        }
+
+        private boolean isFalhaTemporariaIa(Throwable throwable) {
+                Throwable atual = throwable;
+                while (atual != null) {
+                        String mensagem = atual.getMessage();
+                        if (mensagem != null) {
+                                String texto = mensagem.toLowerCase();
+                                if (texto.contains("timeout")
+                                                || texto.contains("timed out")
+                                                || texto.contains("interrupted")
+                                                || texto.contains("503")
+                                                || texto.contains("unavailable")
+                                                || texto.contains("high demand")
+                                                || texto.contains("failed to execute http")
+                                                || texto.contains("connection reset")
+                                                || texto.contains("connect timed out")) {
                                         return true;
                                 }
                         }

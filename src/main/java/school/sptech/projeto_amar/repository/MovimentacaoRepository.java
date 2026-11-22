@@ -21,6 +21,9 @@ public interface MovimentacaoRepository extends JpaRepository<Movimentacao, Inte
 
     List<Movimentacao> findTop20ByTipoOrderByDataDescIdDesc(TipoMovimentacao tipo);
 
+    List<Movimentacao> findTop20ByTipoAndDataBetweenOrderByDataDescIdDesc(
+            TipoMovimentacao tipo, LocalDate dataInicio, LocalDate dataFim);
+
     Long countByTipo(TipoMovimentacao tipo);
 
     Long countByTipoAndDataBetween(TipoMovimentacao tipo, LocalDate inicio, LocalDate fim);
@@ -84,6 +87,19 @@ public interface MovimentacaoRepository extends JpaRepository<Movimentacao, Inte
             ORDER BY SUM(m.quantidade) DESC
             """)
     List<Object[]> findTopProdutosPorTipo(@Param("tipo") TipoMovimentacao tipo, Pageable pageable);
+
+    @Query("""
+            SELECT m.produto.nome, COALESCE(SUM(m.quantidade), 0)
+            FROM Movimentacao m
+            WHERE m.tipo = :tipo
+                AND m.data BETWEEN :dataInicio AND :dataFim
+            GROUP BY m.produto.nome
+            ORDER BY SUM(m.quantidade) DESC
+            """)
+    List<Object[]> findTopProdutosPorTipoAndPeriodo(@Param("tipo") TipoMovimentacao tipo,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim,
+            Pageable pageable);
 
     @Query("""
             SELECT COALESCE(SUM(CASE WHEN m.tipo = school.sptech.projeto_amar.domain.enums.TipoMovimentacao.ENTRADA

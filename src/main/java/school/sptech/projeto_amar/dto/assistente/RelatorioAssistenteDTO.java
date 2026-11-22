@@ -23,6 +23,12 @@ public record RelatorioAssistenteDTO(
         String tipo,
 
         @Schema(
+                description = "Período considerado no relatório",
+                example = "01/04/2026 a 30/04/2026"
+        )
+        String periodo,
+
+        @Schema(
                 description = "Nível de prioridade identificado",
                 example = "critica"
         )
@@ -44,4 +50,14 @@ public record RelatorioAssistenteDTO(
         List<TabelaRelatorioDTO> tabelas
 
 ) {
+
+        public RelatorioAssistenteDTO(
+                        String titulo,
+                        String tipo,
+                        String prioridade,
+                        List<String> response,
+                        List<String> acoes_recomendadas,
+                        List<TabelaRelatorioDTO> tabelas) {
+                this(titulo, tipo, null, prioridade, response, acoes_recomendadas, tabelas);
+        }
 }
