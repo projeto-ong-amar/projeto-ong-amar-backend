@@ -55,12 +55,16 @@ invalida todas as sessões e tokens de recuperação da conta. Faça login novam
 omita o campo `senha` (um valor não nulo é rejeitado com `400`).
 O fluxo de recuperação por e-mail continua disponível para quem esqueceu a senha.
 
-## Responsável das movimentações (BUG-05)
+## Responsável das movimentações (BUG-05 e BUG-06)
 
 Nos POSTs de `/movimentacao/entrada`, `/movimentacao/saida` e
 `/movimentacao/perda`, o responsável é sempre o usuário da sessão autenticada.
 Nos PUTs correspondentes, o responsável original é preservado, mesmo quando
 outro usuário edita o registro.
+
+O histórico também mantém o nome de quem registrou a movimentação, inclusive
+após alterações de quantidade e motivo. O campo de responsável identifica o
+autor original, não o último editor; não há um campo separado para o editor.
 
 O campo legado `fkUsuario` é opcional, está depreciado no Swagger e é ignorado
 em ambos os casos. O front-end pode removê-lo dos corpos das requisições.
