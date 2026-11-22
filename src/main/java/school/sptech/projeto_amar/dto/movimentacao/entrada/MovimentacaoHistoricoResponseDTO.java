@@ -9,6 +9,7 @@ public record MovimentacaoHistoricoResponseDTO (
         String produtoNome,
         Integer quantidade,
         String responsavelNome,
-        String motivo
+        String motivo,
+        LocalDate dataValidade
 ) {
 }

@@ -4,6 +4,8 @@ import school.sptech.projeto_amar.domain.Movimentacao;
 import school.sptech.projeto_amar.dto.movimentacao.MovimentacaoResponseDTO;
 import school.sptech.projeto_amar.dto.movimentacao.entrada.MovimentacaoHistoricoResponseDTO;
 
+import java.time.LocalDate;
+
 public class MovimentacaoMapping {
     public static MovimentacaoResponseDTO toResponse(Movimentacao m) {
         MovimentacaoResponseDTO.ProdutoResponseMovimentacaoDTO produto =
@@ -18,7 +20,7 @@ public class MovimentacaoMapping {
                 , usuario);
     }
 
-    public static MovimentacaoHistoricoResponseDTO toMovimentacaoHistorico(Movimentacao m) {
+    public static MovimentacaoHistoricoResponseDTO toMovimentacaoHistorico(Movimentacao m, LocalDate dataValidade) {
         return new MovimentacaoHistoricoResponseDTO(
                 m.getId(),
                 m.getData(),
@@ -26,7 +28,8 @@ public class MovimentacaoMapping {
                 m.getProduto().getNome(),
                 m.getQuantidade(),
                 m.getUsuario().getNome(),
-                m.getMotivo()
+                m.getMotivo(),
+                dataValidade
         );
     }
 }

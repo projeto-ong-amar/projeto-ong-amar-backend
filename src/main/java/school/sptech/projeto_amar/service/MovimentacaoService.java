@@ -130,6 +130,22 @@ public class MovimentacaoService {
         return page;
     }
 
+    public Map<Integer, LocalDate> validadesPorMovimentacao(List<Movimentacao> movimentacoes) {
+        List<Integer> ids = movimentacoes.stream().map(Movimentacao::getId).toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Integer, LocalDate> validades = new LinkedHashMap<>();
+        for (MovimentacaoEstoque item : movimentacaoEstoqueRepository.findByMovimentacaoIdIn(ids)) {
+            if (item.getMovimentacao() == null || item.getProdutoLote() == null) {
+                continue;
+            }
+            validades.putIfAbsent(item.getMovimentacao().getId(), item.getProdutoLote().getValidade());
+        }
+        return validades;
+    }
+
     @Transactional
     public Movimentacao atualizarEntrada(EntradaRequestDTO entrada, Integer id) {
         Movimentacao m = repository.findById(id).orElseThrow(() ->
