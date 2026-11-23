@@ -204,11 +204,15 @@ java -jar target\projeto-amar-0.0.1-SNAPSHOT.jar
 | GET | `/movimentacao/saida/historico` | Autenticado | Historico paginado de saidas |
 | POST | `/movimentacao/perda` | Autenticado | Registrar perda |
 | PUT | `/movimentacao/perda/{id}` | Autenticado | Atualizar perda |
-| POST | `/assistente/relatorio/entradas` | Publico | Relatorio IA: historico de entradas |
-| POST | `/assistente/relatorio/saidas` | Publico | Relatorio IA: historico de saidas |
-| POST | `/assistente/relatorio/desempenho-geral` | Publico | Relatorio IA: desempenho geral |
-| POST | `/assistente/relatorio/produtos-cadastrados` | Publico | Relatorio IA: produtos cadastrados |
-| POST | `/assistente/relatorio/*/pdf` | Publico | Versao PDF de qualquer relatorio |
+| POST | `/assistente/relatorio/entradas` | ADMINISTRADOR | Relatorio IA: historico de entradas (texto) |
+| POST | `/assistente/relatorio/saidas` | ADMINISTRADOR | Relatorio IA: historico de saídas (texto) |
+| POST | `/assistente/relatorio/desempenho-geral` | ADMINISTRADOR | Relatorio IA: desempenho geral (texto) |
+| POST | `/assistente/relatorio/produtos-cadastrados` | ADMINISTRADOR | Relatorio IA: produtos cadastrados (texto) |
+| POST | `/assistente/relatorio/entradas/preview` | ADMINISTRADOR | Preview JSON (tela) do relatório de entradas |
+| POST | `/assistente/relatorio/saidas/preview` | ADMINISTRADOR | Preview JSON (tela) do relatório de saídas |
+| POST | `/assistente/relatorio/desempenho-geral/preview` | ADMINISTRADOR | Preview JSON (tela) do desempenho geral |
+| POST | `/assistente/relatorio/produtos-cadastrados/preview` | ADMINISTRADOR | Preview JSON (tela) de produtos cadastrados |
+| POST | `/assistente/relatorio/*/pdf` | ADMINISTRADOR | Versão PDF de qualquer relatório |
 
 ## Architecture
 

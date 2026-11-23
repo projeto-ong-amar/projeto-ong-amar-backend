@@ -96,6 +96,12 @@ public class AssistenteController {
 
     @PostMapping("/relatorio/entradas/preview")
     @Operation(summary = "Visualizar relatório de entradas", description = "Gera o relatório estruturado de entradas para exibição na tela")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Relatório gerado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "403", description = "Acesso restrito a ADMINISTRADOR")
+    })
     public RelatorioAssistenteDTO visualizarRelatorioHistoricoEntradas(@RequestBody PerguntaRequestDTO body) {
         return assistenteService.gerarRelatorioHistoricoEntradasParaPdf(
                 body.pergunta(), body.dataInicio(), body.dataFim());
@@ -103,6 +109,12 @@ public class AssistenteController {
 
     @PostMapping("/relatorio/saidas/preview")
     @Operation(summary = "Visualizar relatório de saídas", description = "Gera o relatório estruturado de saídas para exibição na tela")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Relatório gerado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "403", description = "Acesso restrito a ADMINISTRADOR")
+    })
     public RelatorioAssistenteDTO visualizarRelatorioHistoricoSaidas(@RequestBody PerguntaRequestDTO body) {
         return assistenteService.gerarRelatorioHistoricoSaidasParaPdf(
                 body.pergunta(), body.dataInicio(), body.dataFim());
@@ -110,6 +122,12 @@ public class AssistenteController {
 
     @PostMapping("/relatorio/desempenho-geral/preview")
     @Operation(summary = "Visualizar relatório de desempenho", description = "Gera o relatório estruturado de desempenho para exibição na tela")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Relatório gerado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "403", description = "Acesso restrito a ADMINISTRADOR")
+    })
     public RelatorioAssistenteDTO visualizarRelatorioDesempenhoGeral(@RequestBody PerguntaRequestDTO body) {
         return assistenteService.gerarRelatorioDesempenhoGeralParaPdf(
                 body.pergunta(), body.dataInicio(), body.dataFim());
@@ -117,6 +135,12 @@ public class AssistenteController {
 
     @PostMapping("/relatorio/produtos-cadastrados/preview")
     @Operation(summary = "Visualizar relatório de produtos", description = "Gera o relatório estruturado de produtos cadastrados para exibição na tela")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Relatório gerado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "403", description = "Acesso restrito a ADMINISTRADOR")
+    })
     public RelatorioAssistenteDTO visualizarRelatorioProdutosCadastrados(@RequestBody PerguntaRequestDTO body) {
         return assistenteService.gerarRelatorioProdutosCadastradosParaPdf(
                 body.pergunta(), body.dataInicio(), body.dataFim());
