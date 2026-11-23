@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import school.sptech.projeto_amar.exception.movimentacaoExceptions.EstoqueInsuficienteException;
 
 import java.util.List;
 
@@ -24,6 +25,8 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     public record ErroCampo(String campo, String mensagem) {}
     public record ErroResposta(int status, String message, List<ErroCampo> erros) {}
+    public record ErroEstoqueResposta(int status, String message, List<ErroCampo> erros,
+                                     Integer estoqueDisponivel) {}
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -57,6 +60,13 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Object> acessoNegado(AccessDeniedException exception) {
         return resposta(HttpStatus.FORBIDDEN, HttpHeaders.EMPTY, "Acesso negado");
+    }
+
+    @ExceptionHandler(EstoqueInsuficienteException.class)
+    public ResponseEntity<Object> estoqueInsuficiente(EstoqueInsuficienteException exception) {
+        return ResponseEntity.badRequest().body(new ErroEstoqueResposta(
+                HttpStatus.BAD_REQUEST.value(), "Estoque insuficiente", List.of(),
+                exception.getEstoqueDisponivel()));
     }
 
     @ExceptionHandler(Exception.class)
