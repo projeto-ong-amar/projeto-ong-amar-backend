@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,9 +20,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import school.sptech.projeto_amar.config.GerenciadorTokenJwt;
+import school.sptech.projeto_amar.domain.Produto;
+import school.sptech.projeto_amar.domain.ProdutoLote;
 import school.sptech.projeto_amar.domain.Usuario;
+import school.sptech.projeto_amar.domain.enums.Categoria;
+import school.sptech.projeto_amar.domain.enums.TipoMovimentacao;
 import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 import school.sptech.projeto_amar.dto.usuario.UsuarioDetalhesDTO;
+import school.sptech.projeto_amar.repository.MovimentacaoRepository;
+import school.sptech.projeto_amar.repository.ProdutoLoteRepository;
+import school.sptech.projeto_amar.repository.ProdutoRepository;
 import school.sptech.projeto_amar.repository.UsuarioRepository;
 
 import java.io.IOException;
@@ -31,6 +39,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -48,6 +57,9 @@ class RespostasErroIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private GerenciadorTokenJwt jwt;
     @Autowired private UsuarioRepository usuarios;
+    @Autowired private ProdutoRepository produtos;
+    @Autowired private ProdutoLoteRepository lotes;
+    @Autowired private MovimentacaoRepository movimentacoes;
     @LocalServerPort private int port;
     private Cookie autenticacao;
 
@@ -170,6 +182,59 @@ class RespostasErroIntegrationTest {
                 .andExpect(jsonPath("$.message").value("Não foi possível concluir a solicitação. Tente novamente mais tarde"))
                 .andExpect(jsonPath("$.trace").doesNotExist())
                 .andExpect(content().string(not(containsString("segredo-interno"))));
+    }
+
+    @ParameterizedTest
+    @EnumSource(TipoUsuario.class)
+    void estoqueInsuficienteExpoeSaldoSeguroSemAlterarEstoque(TipoUsuario perfil) throws Exception {
+        Cookie sessao = cookie(perfil);
+        Produto produto = new Produto();
+        produto.setNome("Erro " + UUID.randomUUID());
+        produto.setCategoria(Categoria.ALIMENTOS);
+        produto.setUnidadeMedida("UN");
+        produto.setStatus("ATIVO");
+        produto = produtos.save(produto);
+        ProdutoLote lote = new ProdutoLote();
+        lote.setProduto(produto);
+        lote.setQuantidade(20);
+        lote.setDataEntrada(LocalDate.now());
+        lote.setValidade(LocalDate.now().plusMonths(1));
+        lote = lotes.save(lote);
+
+        String corpo = """
+                {"quantidade":%d,"dataSaida":"%s","motivo":"Distribuição","fkProduto":%d}
+                """;
+        String rota = "/movimentacao/saida";
+        for (boolean editar : new boolean[] {false, true}) {
+            if (editar) {
+                mockMvc.perform(post(rota).cookie(sessao).with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(corpo.formatted(5, LocalDate.now(), produto.getId())))
+                        .andExpect(status().isCreated());
+                var original = movimentacoes.findByTipoAndProdutoId(TipoMovimentacao.SAIDA, produto.getId()).getFirst();
+                rota += "/" + original.getId();
+            }
+            mockMvc.perform(request(editar ? org.springframework.http.HttpMethod.PUT : org.springframework.http.HttpMethod.POST, rota)
+                            .cookie(sessao).with(csrf()).param("trace", "true").param("message", "true")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(corpo.formatted(9999, LocalDate.now(), produto.getId())))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value(400))
+                    .andExpect(jsonPath("$.message").value("Estoque insuficiente"))
+                    .andExpect(jsonPath("$.erros").isEmpty())
+                    // Na edição, inclui a quantidade da saída original que seria devolvida.
+                    .andExpect(jsonPath("$.estoqueDisponivel").value(20))
+                    .andExpect(jsonPath("$.trace").doesNotExist())
+                    .andExpect(jsonPath("$.exception").doesNotExist())
+                    .andExpect(content().string(not(containsString("school.sptech"))))
+                    .andExpect(content().string(not(containsString("java.lang"))));
+            assertEquals(editar ? 15 : 20, lotes.findById(lote.getId()).orElseThrow().getQuantidade());
+            var salvas = movimentacoes.findByTipoAndProdutoId(TipoMovimentacao.SAIDA, produto.getId());
+            assertEquals(editar ? 1 : 0, salvas.size());
+            if (editar) {
+                assertEquals(5, salvas.getFirst().getQuantidade());
+            }
+        }
     }
 
     @Test
