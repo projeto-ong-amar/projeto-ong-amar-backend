@@ -104,10 +104,22 @@ duplicado retorna `409`). Erros inesperados retornam `500` com mensagem genéric
 Respostas já produzidas pelos controllers e filtros de segurança mantêm seus
 contratos, como `mensagem` no login e na troca de senha.
 
+Erros de estoque insuficiente mantêm `400`, `message: "Estoque insuficiente"` e
+`erros: []`, acrescentando o campo numérico `estoqueDisponivel`. O front-end pode
+usá-lo para orientar a correção da quantidade, sem interpretar mensagens internas.
+Na edição de saída, esse valor inclui a quantidade da saída original devolvida
+para o cálculo (limite total da nova saída), não apenas o saldo atual dos lotes.
+A requisição rejeitada não altera a movimentação nem o estoque.
+
 Stack traces, classes de exceção e valores rejeitados não são enviados.
 O fallback do servidor em `/error` também omite trace, exceção, mensagem interna
 e erros de binding, mesmo com `?trace=true` ou DevTools. Não habilite essas
 opções por variáveis de ambiente ou configurações específicas de perfil.
+Os testes verificam separadamente a configuração efetiva dos arquivos dos perfis
+`dev` e `prod`, além dos handlers e do fallback HTTP. Isso não substitui verificar
+as variáveis e configurações externas do ambiente implantado; o relato de QA da
+issue #33 confirmou exposição apenas no `dev` da versão histórica `a0ae1ff`,
+anterior à correção do PR #41, não em produção.
 
 ## Quick Start
 
