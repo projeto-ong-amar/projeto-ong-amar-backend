@@ -2,6 +2,7 @@ package school.sptech.projeto_amar.domain;
 
 import jakarta.persistence.*;
 import school.sptech.projeto_amar.domain.enums.TipoUsuario;
+import java.time.LocalDateTime;
 
 @Entity
 public class Usuario {
@@ -16,6 +17,15 @@ public class Usuario {
   private TipoUsuario tipoUsuario;
   private String status;
   private int versaoToken;
+  @Column(name = "data_cadastro", nullable = false, updatable = false)
+  private LocalDateTime dataCadastro;
+
+  @PrePersist
+  public void prePersist() {
+    if (dataCadastro == null) {
+      dataCadastro = LocalDateTime.now();
+    }
+  }
 
   public TipoUsuario getTipoUsuario() {
     return tipoUsuario;
@@ -71,6 +81,14 @@ public class Usuario {
 
   public void setVersaoToken(int versaoToken) {
     this.versaoToken = versaoToken;
+  }
+
+  public LocalDateTime getDataCadastro() {
+    return dataCadastro;
+  }
+
+  public void setDataCadastro(LocalDateTime dataCadastro) {
+    this.dataCadastro = dataCadastro;
   }
 
 }
