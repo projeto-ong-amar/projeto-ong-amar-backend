@@ -14,6 +14,7 @@ import school.sptech.projeto_amar.domain.enums.TipoUsuario;
 import school.sptech.projeto_amar.service.LoginAttemptService;
 import school.sptech.projeto_amar.service.UsuarioService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
@@ -45,6 +46,7 @@ class UsuarioControllerTest {
         usuario.setTipoUsuario(TipoUsuario.VOLUNTARIO);
         usuario.setStatus("ATIVO");
         usuario.setSenha("senhaHasheada");
+        usuario.setDataCadastro(LocalDateTime.of(2026, 11, 22, 23, 40, 0));
     }
 
     @Test
@@ -59,6 +61,7 @@ class UsuarioControllerTest {
                 .andExpect(jsonPath("$[0].email").value("joao@email.com"))
                 .andExpect(jsonPath("$[0].tipoUsuario").value("VOLUNTARIO"))
                 .andExpect(jsonPath("$[0].status").value("ATIVO"))
+                .andExpect(jsonPath("$[0].dataCadastro").value("2026-11-22T23:40:00"))
                 .andExpect(jsonPath("$[0].senha").doesNotExist());
     }
 

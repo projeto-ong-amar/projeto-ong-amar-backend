@@ -2,6 +2,7 @@ package school.sptech.projeto_amar.dto.usuario;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import school.sptech.projeto_amar.domain.enums.TipoUsuario;
+import java.time.LocalDateTime;
 
 @Schema(description = "Dados de retorno de um usuário")
 public record UsuarioResponseDTO(
@@ -19,7 +20,10 @@ public record UsuarioResponseDTO(
         TipoUsuario tipoUsuario,
 
         @Schema(description = "Status do usuário", example = "Ativo")
-        String status
+        String status,
+
+        @Schema(description = "Data de cadastro do usuário", example = "2026-11-22T23:40:00")
+        LocalDateTime dataCadastro
 
 ) {
 }
